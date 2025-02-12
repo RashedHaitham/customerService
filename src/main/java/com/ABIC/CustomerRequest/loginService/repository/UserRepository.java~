@@ -1,0 +1,12 @@
+package com.ABIC.CustomerRequest.loginService.repository;
+
+import com.ABIC.CustomerRequest.loginService.model.User;
+import org.springframework.data.ldap.repository.LdapRepository;
+
+import java.util.Optional;
+
+public interface UserRepository extends LdapRepository<User> {
+    public Optional<User> findByEmail(String email);
+
+    boolean existsByEmail(String username);
+}
