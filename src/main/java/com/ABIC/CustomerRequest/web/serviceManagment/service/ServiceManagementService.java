@@ -87,6 +87,9 @@ public class ServiceManagementService {
         return serviceRepository.findAll(pageable);
     }
 
+    public Page<Services> getServicesByStatus(String status, Pageable pageable) {
+        return serviceRepository.findByStatusEn(status, pageable);
+    }
 
     public String toggleServiceVisibility(Long serviceId, Long statusId) {
         Services service = serviceRepository.findById(serviceId)
@@ -114,7 +117,7 @@ public class ServiceManagementService {
             return templateRepository.findAll();
         } catch (Exception e) {
             System.err.println("Error fetching templates: " + e.getMessage());
-            return List.of();  // Return an empty list if an error occurs
+            return List.of();
         }
     }
 

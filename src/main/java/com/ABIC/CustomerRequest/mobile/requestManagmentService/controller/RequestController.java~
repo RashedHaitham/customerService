@@ -134,7 +134,7 @@ public class RequestController {
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<Services> servicesPage = serviceManagementService.getServicesByStatus("Active", pageable);
+        Page<Services> servicesPage = serviceManagementService.getAllServices(pageable);
 
         PaginatedResponse<Services> responseData = new PaginatedResponse<>(servicesPage);
 
