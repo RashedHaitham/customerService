@@ -1,0 +1,4 @@
+package com.ABIC.CustomerRequest.web.serviceManagment.model;
+
+public class FieldValueDTO {
+}

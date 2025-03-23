@@ -1,5 +1,6 @@
-package com.ABIC.CustomerRequest.web.serviceManagment.model;
+package com.ABIC.CustomerRequest.web.serviceManagment.model.dto;
 
+import com.ABIC.CustomerRequest.web.serviceManagment.model.Template;
 import lombok.Data;
 
 @Data

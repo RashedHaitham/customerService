@@ -1,12 +1,14 @@
 package com.ABIC.CustomerRequest.mobile.requestManagmentService.controller;
 
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.*;
+import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.AddRequestDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.service.RequestService;
 import com.ABIC.CustomerRequest.util.PaginatedResponse;
 import com.ABIC.CustomerRequest.util.Response;
 import com.ABIC.CustomerRequest.util.ResponseUtils;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.ServiceType;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.Services;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.TemplateSubmissionDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,6 +144,11 @@ public class RequestController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/service/submit")
+    public ResponseEntity<String> submitForm(@RequestBody TemplateSubmissionDTO submissionDTO) {
+        String submissionId = requestService.submitTemplateForm(submissionDTO);
+        return ResponseEntity.ok("Form submitted successfully. Submission ID: " + submissionId);
+    }
 
 }
 

@@ -1,13 +1,19 @@
 package com.ABIC.CustomerRequest.mobile.requestManagmentService.service;
 
-import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.AddRequestDTO;
+import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.AddRequestDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.Request;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.RequestStatusSummary;
-import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.UpdateRequestDto;
+import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.UpdateRequestDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.repository.RequestRepository;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.ServiceType;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.TemplateField;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.TemplateFieldValue;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.FieldValueDTO;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.TemplateSubmissionDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.repository.ServiceTypeRepository;
 import com.ABIC.CustomerRequest.util.JWTUtil;
+import com.ABIC.CustomerRequest.web.serviceManagment.repository.TemplateFieldValueRepository;
+import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.LoggerFactory;
@@ -20,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -31,12 +38,15 @@ public class RequestService {
     private final HttpServletRequest httpServletRequest;
     private final ServiceTypeRepository serviceTypeRepository;
     private static final Logger logger = LoggerFactory.getLogger(RequestService.class);
-
-    public RequestService(RequestRepository requestRepository, JWTUtil jwtUtil, HttpServletRequest httpServletRequest, ServiceTypeRepository serviceTypeRepository) {
+    private final ServiceManagementService serviceManagementService;
+    private final TemplateFieldValueRepository templateFieldValueRepository;
+    public RequestService(RequestRepository requestRepository, JWTUtil jwtUtil, HttpServletRequest httpServletRequest, ServiceTypeRepository serviceTypeRepository, ServiceManagementService serviceManagementService, TemplateFieldValueRepository templateFieldValueRepository) {
         this.requestRepository = requestRepository;
         this.jwtUtil = jwtUtil;
         this.httpServletRequest = httpServletRequest;
         this.serviceTypeRepository = serviceTypeRepository;
+        this.serviceManagementService = serviceManagementService;
+        this.templateFieldValueRepository = templateFieldValueRepository;
     }
 
     public Page<Request> getAllRequests(Pageable pageable) {
@@ -119,7 +129,7 @@ public class RequestService {
     }
 
 
-    public Request updateRequest(String requestNumber, UpdateRequestDto requestDTO) {
+    public Request updateRequest(String requestNumber, UpdateRequestDTO requestDTO) {
         Request request = requestRepository.findByRequestNumber(requestNumber);
         if (request == null) {
             throw new RuntimeException("Request not found with number: " + requestNumber);
@@ -162,6 +172,29 @@ public class RequestService {
     }
 
     public List<ServiceType> getAllServiceTypes() {return serviceTypeRepository.findAll();}
+
+    public String submitTemplateForm(TemplateSubmissionDTO submissionDTO) {
+        String submissionId = UUID.randomUUID().toString();
+
+        for (FieldValueDTO dto : submissionDTO.getValues()) {
+            TemplateField field = serviceManagementService.getTemplateFieldById(dto.getFieldId());
+
+            if (field == null) {
+                throw new RuntimeException("Field not found: " + dto.getFieldId());
+            }
+
+            TemplateFieldValue value = new TemplateFieldValue();
+            value.setField(field);
+            value.setGroupId(submissionDTO.getGroupId());
+            value.setSubmissionId(submissionId);
+            value.setValue(dto.getValue());
+
+            templateFieldValueRepository.save(value);
+        }
+
+        return submissionId;
+    }
+
 
 //    public boolean validateSession(ValidateRequest validateRequest) {
 //        String validationUrl = "http://10.38.2.15:8091/MubasherRESTAPI/api/RestSOA/validateSession";

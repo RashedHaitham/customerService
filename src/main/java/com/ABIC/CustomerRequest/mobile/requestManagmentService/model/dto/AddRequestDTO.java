@@ -1,4 +1,4 @@
-package com.ABIC.CustomerRequest.mobile.requestManagmentService.model;
+package com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

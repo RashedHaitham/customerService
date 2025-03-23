@@ -141,6 +141,15 @@ public class ServiceManagementService {
         }
     }
 
+    public TemplateField getTemplateFieldByLabel(String label) {
+        try {
+            return templateFieldRepository.findByLabel(label);
+        } catch (Exception e) {
+            System.err.println("Error fetching template field by label: " + e.getMessage());
+            return null;
+        }
+    }
+
     public List<TemplateField> getTemplateFieldsByGroupId(Long groupId) {
         try {
             return templateFieldRepository.findByGroupId(groupId);

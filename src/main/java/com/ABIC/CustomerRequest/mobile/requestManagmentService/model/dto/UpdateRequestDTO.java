@@ -1,5 +1,6 @@
-package com.ABIC.CustomerRequest.mobile.requestManagmentService.model;
+package com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto;
 
+import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.Request;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateRequestDto {
+public class UpdateRequestDTO {
 
     @Size(max = 500, message = "Description must not exceed 500 characters")
     private String description;
