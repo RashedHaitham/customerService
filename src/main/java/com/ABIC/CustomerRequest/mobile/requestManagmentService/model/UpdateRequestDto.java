@@ -1,0 +1,42 @@
+package com.ABIC.CustomerRequest.mobile.requestManagmentService.model;
+
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class UpdateRequestDto {
+
+    @Size(max = 500, message = "Description must not exceed 500 characters")
+    private String description;
+
+    private String requestedBy; // Optional
+
+    private String customerNumber; // Optional
+
+    private String statusUpdatedBy; // Optional
+
+    private String status; // Enum conversion handled separately
+
+    private String serviceType; // Enum conversion handled separately
+
+    private String slaTime; // Optional
+
+    private String comment; // Optional
+
+    /**
+     * Converts status string to Enum safely.
+     * @return Request.Status Enum or null if invalid.
+     */
+    public Request.Status getStatusEnum() {
+        try {
+            return status != null && !status.isEmpty() ? Request.Status.valueOf(status.toUpperCase()) : null;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+}

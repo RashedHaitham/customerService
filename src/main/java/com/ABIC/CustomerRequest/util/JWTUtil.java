@@ -1,6 +1,6 @@
 package com.ABIC.CustomerRequest.util;
 
-import com.ABIC.CustomerRequest.loginService.model.User;
+import com.ABIC.CustomerRequest.web.loginService.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
