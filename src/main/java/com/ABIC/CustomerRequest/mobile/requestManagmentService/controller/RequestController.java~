@@ -147,9 +147,7 @@ public class RequestController {
 
     @PostMapping("/service/submit")
     public ResponseEntity<String> submitForm(@RequestBody TemplateSubmissionDTO submissionDTO,@RequestHeader("sessionId") String sessionId) {
-
-        //customer number should be retrieved via sessionId
-        String submissionId = requestService.submitTemplateForm(submissionDTO,sessionId,"1234");
+        String submissionId = requestService.submitTemplateForm(submissionDTO,sessionId);
         return ResponseEntity.ok("Form submitted successfully. Submission ID: " + submissionId);
     }
 

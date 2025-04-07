@@ -173,8 +173,7 @@ public class RequestService {
 
     public List<ServiceType> getAllServiceTypes() {return serviceTypeRepository.findAll();}
 
-    public String submitTemplateForm(TemplateSubmissionDTO submissionDTO) {
-        String submissionId = UUID.randomUUID().toString();
+    public String submitTemplateForm(TemplateSubmissionDTO submissionDTO,String sessionId,String customerNumber) {
 
         for (FieldValueDTO dto : submissionDTO.getValues()) {
             TemplateField field = serviceManagementService.getTemplateFieldById(dto.getFieldId());
@@ -186,13 +185,13 @@ public class RequestService {
             TemplateFieldValue value = new TemplateFieldValue();
             value.setField(field);
             value.setGroupId(submissionDTO.getGroupId());
-            value.setSubmissionId(submissionId);
             value.setValue(dto.getValue());
-
+            value.setSessionId(sessionId);
+            value.setCustomerNumber(customerNumber);
             templateFieldValueRepository.save(value);
         }
 
-        return submissionId;
+        return "submissionId";
     }
 
 

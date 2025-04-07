@@ -21,9 +21,12 @@ public class TemplateFieldValue {
     @Column(name = "group_id", nullable = false)
     private Long groupId;
 
-    @Column(name = "submission_id", nullable = false)
-    private String submissionId;
-
     @Column(name = "value", columnDefinition = "TEXT")
     private String value;
+
+    @Column(name = "sessionId",nullable = false)
+    private String sessionId;
+
+    @Column(name = "customerNumber",nullable = false)
+    private String customerNumber;
 }

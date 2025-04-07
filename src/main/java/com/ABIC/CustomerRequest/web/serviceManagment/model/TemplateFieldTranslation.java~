@@ -1,0 +1,27 @@
+package com.ABIC.CustomerRequest.web.serviceManagment.model;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+@Entity
+@Table(name = "template_field_translations")
+@Data
+public class TemplateFieldTranslation {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "template_field_id", nullable = false)
+    private TemplateField templateField;
+
+    @Column(nullable = false)
+    private String languageCode;
+
+    @Column(nullable = false)
+    private String label;
+
+    private String placeholder;
+    private String extraData;
+}

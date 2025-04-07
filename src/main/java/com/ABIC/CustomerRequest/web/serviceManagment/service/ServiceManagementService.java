@@ -23,17 +23,20 @@ public class ServiceManagementService {
 
     private final TemplateFieldRepository templateFieldRepository;
 
+    private final TemplateFieldValueRepository templateFieldValueRepository;
+
+
     @Autowired
-    public ServiceManagementService(ServiceRepository serviceRepository, ServiceTypeRepository serviceTypeRepository, ServiceStatusRepository serviceStatusRepository, TemplateRepository templateRepository, TemplateFieldRepository templateFieldRepository) {
+    public ServiceManagementService(ServiceRepository serviceRepository, ServiceTypeRepository serviceTypeRepository, ServiceStatusRepository serviceStatusRepository, TemplateRepository templateRepository, TemplateFieldRepository templateFieldRepository, TemplateFieldValueRepository templateFieldValueRepository) {
         this.serviceRepository = serviceRepository;
         this.serviceTypeRepository = serviceTypeRepository;
         this.serviceStatusRepository = serviceStatusRepository;
         this.templateRepository = templateRepository;
         this.templateFieldRepository = templateFieldRepository;
+        this.templateFieldValueRepository = templateFieldValueRepository;
     }
 
     public Services createService(ServiceDTO dto) {
-        // Fetch service type
         ServiceType serviceType = serviceTypeRepository.findById(dto.getServiceTypeId())
                 .orElseThrow(() -> new RuntimeException("Service Type not found"));
 
@@ -150,13 +153,37 @@ public class ServiceManagementService {
         }
     }
 
-    public List<TemplateField> getAllTemplateFields() {
+    public Page<TemplateFieldValue> getAllSubs(String customerNumber, Pageable pageable) {
+        return templateFieldValueRepository.getAllByCustomerNumber(customerNumber, pageable);
+    }
+
+    public String createTemplateField(TemplateField template) {
         try {
-            return templateFieldRepository.findAll();
+            templateFieldRepository.save(template);
+            return "Template Fields added successfully";
         } catch (Exception e) {
-            System.err.println("Error fetching all template fields: " + e.getMessage());
-            return List.of();
+            System.err.println("Error deleting template: " + e.getMessage());
+            return "Error adding template Fields";
         }
     }
 
+    public String deleteTemplateField(Long id) {
+        try {
+            templateFieldRepository.deleteById(id);
+            return "Template deleted successfully";
+        } catch (Exception e) {
+            System.err.println("Error deleting template: " + e.getMessage());
+            return "Error deleting template";
+        }
+    }
+
+    public String createTemplate(Template template) {
+        try {
+            templateRepository.save(template);
+            return "Template added successfully";
+        } catch (Exception e) {
+            System.err.println("Error deleting template: " + e.getMessage());
+            return "Error adding template";
+        }
+    }
 }

@@ -14,30 +14,18 @@ public class UpdateRequestDTO {
     @Size(max = 500, message = "Description must not exceed 500 characters")
     private String description;
 
-    private String requestedBy; // Optional
+    private String requestedBy;
 
-    private String customerNumber; // Optional
+    private String customerNumber;
 
-    private String statusUpdatedBy; // Optional
+    private String statusUpdatedBy;
 
-    private String status; // Enum conversion handled separately
+    private String status;
 
-    private String serviceType; // Enum conversion handled separately
+    private String serviceType;
 
-    private String slaTime; // Optional
+    private String slaTime;
 
-    private String comment; // Optional
-
-    /**
-     * Converts status string to Enum safely.
-     * @return Request.Status Enum or null if invalid.
-     */
-    public Request.Status getStatusEnum() {
-        try {
-            return status != null && !status.isEmpty() ? Request.Status.valueOf(status.toUpperCase()) : null;
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
+    private String comment;
 
 }

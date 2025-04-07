@@ -178,7 +178,7 @@ public class ServiceManagementController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/templateFields")
+    @PostMapping("/templateField")
     public ResponseEntity<Response<String>> createTemplateFields(@RequestBody List<TemplateField> templates) {
         for(TemplateField template : templates) {
             serviceManagementService.createTemplateField(template);

@@ -14,7 +14,10 @@ public class TemplateField {
     private Long id;
 
     @Column(nullable = false)
-    private String label;
+    private String labelEn;
+
+    @Column(nullable = false)
+    private String labelAr;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "control_type", nullable = false)
@@ -24,24 +27,22 @@ public class TemplateField {
     private boolean required;
 
     @Column(nullable = false)
+    private boolean attachment;
+
+    @Column(nullable = false)
     private int sorting;
 
-    private String placeholder;
+    private String placeholderEn;
 
-    @Column(name = "extra_data", columnDefinition = "TEXT")
-    private String extraData;  // Can be JSON or comma-separated values
+    private String placeholderAr;
+
+    @Column(name = "extra_data_en", columnDefinition = "TEXT")
+    private String extraDataEn;  // Can be JSON or comma-separated values
+
+    @Column(name = "extra_data_ar", columnDefinition = "TEXT")
+    private String extraDataAr;
 
     @Column(name = "group_id", nullable = false)
     private Long groupId;
-
-    private enum ControlType {
-        TEXTBOX,
-        RADIOBUTTON,
-        DROPDOWN,
-        CHECKBOX,
-        DATEPICKER,
-        TEXTAREA,
-        NUMBER
-    }
 
 }
