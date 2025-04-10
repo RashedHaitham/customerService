@@ -176,4 +176,51 @@ public class ServiceManagementService {
             return "Error deleting template";
         }
     }
+
+    public String createTemplate(Template template) {
+        try {
+            templateRepository.save(template);
+            return "Template added successfully";
+        } catch (Exception e) {
+            System.err.println("Error deleting template: " + e.getMessage());
+            return "Error adding template";
+        }
+    }
+
+    public Optional<List<TemplateField>> getAllTemplateFields(String groupId) {
+        try {
+            Long parsedGroupId = Long.parseLong(groupId);
+            List<TemplateField> fields = templateFieldRepository.findByGroupId(parsedGroupId);
+            return Optional.ofNullable(fields);
+        } catch (Exception e) {
+            System.err.println("Error fetching template: " + e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    public String deleteTemplate(Long templateId) {
+        try {
+            templateRepository.deleteById(templateId);
+            return "Template deleted successfully";
+        } catch (Exception e) {
+            System.err.println("Error deleting template: " + e.getMessage());
+            return "Error deleting template";
+        }
+    }
+
+    public void updateTemplate(Long templateId, Template template) {
+        try {
+            templateRepository.findById(templateId)
+                    .ifPresent(existingTemplate -> {
+                        existingTemplate.se(template.getEnglishName());
+                        existingTemplate.setArabicName(template.getArabicName());
+                        existingTemplate.setDescription(template.getDescription());
+                        existingTemplate.setArabicDescription(template.getArabicDescription());
+                        existingTemplate.setGroupId(template.getGroupId());
+                        templateRepository.save(existingTemplate);
+                    });
+        } catch (Exception e) {
+            System.err.println("Error updating template: " + e.getMessage());
+        }
+    }
 }

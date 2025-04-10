@@ -14,10 +14,16 @@ public class Template {
     private Long id;
 
     @Column(nullable = false)
-    private String name;
+    private String EnglishName;
+
+    @Column(nullable = false)
+    private String ArabicName;
 
     @Column(columnDefinition = "TEXT")
-    private String description;
+    private String EnglishDescription;
+
+    @Column(columnDefinition = "TEXT")
+    private String ArabicDescription;
 
     @Column(name = "group_id", nullable = false)
     private Long groupId;

@@ -36,7 +36,7 @@ public class ServiceManagementService {
         this.templateFieldValueRepository = templateFieldValueRepository;
     }
 
-    public Services createService(ServiceDTO dto) {
+    public void createService(ServiceDTO dto) {
         ServiceType serviceType = serviceTypeRepository.findById(dto.getServiceTypeId())
                 .orElseThrow(() -> new RuntimeException("Service Type not found"));
 
@@ -55,10 +55,10 @@ public class ServiceManagementService {
         service.setStatus(status);
         service.setSlaTime(dto.getSlaTime());
 
-        return serviceRepository.save(service);
+        serviceRepository.save(service);
     }
 
-    public Services updateService(Long serviceId, ServiceDTO service) {
+    public void updateService(Long serviceId, ServiceDTO service) {
         Services existingService = serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new RuntimeException("Service not found with ID: " + serviceId));
 
@@ -83,7 +83,6 @@ public class ServiceManagementService {
         existingService.setArabicPlaceHolder(service.getArabicPlaceHolder());
 
         serviceRepository.save(existingService);
-        return existingService;
     }
 
     public TemplateField getTemplateFieldById(Long id) {
@@ -104,7 +103,7 @@ public class ServiceManagementService {
         return serviceRepository.findByStatusEn(status, pageable);
     }
 
-    public String toggleServiceVisibility(Long serviceId, Long statusId) {
+    public void toggleServiceVisibility(Long serviceId, Long statusId) {
         Services service = serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new RuntimeException("Service not found with ID: " + serviceId));
 
@@ -114,7 +113,6 @@ public class ServiceManagementService {
         service.setStatus(status);
         serviceRepository.save(service);
 
-        return "Service visibility updated successfully";
     }
 
     public List<ServiceStatus> getAllServiceStatuses() {
@@ -157,13 +155,11 @@ public class ServiceManagementService {
         return templateFieldValueRepository.getAllByCustomerNumber(customerNumber, pageable);
     }
 
-    public String createTemplateField(TemplateField template) {
+    public void createTemplateField(TemplateField template) {
         try {
             templateFieldRepository.save(template);
-            return "Template Fields added successfully";
         } catch (Exception e) {
             System.err.println("Error deleting template: " + e.getMessage());
-            return "Error adding template Fields";
         }
     }
 
@@ -177,13 +173,46 @@ public class ServiceManagementService {
         }
     }
 
-    public String createTemplate(Template template) {
+    public void createTemplate(Template template) {
         try {
             templateRepository.save(template);
-            return "Template added successfully";
         } catch (Exception e) {
             System.err.println("Error deleting template: " + e.getMessage());
-            return "Error adding template";
+        }
+    }
+
+    public Optional<List<TemplateField>> getAllTemplateFields(String groupId) {
+        try {
+            Long parsedGroupId = Long.parseLong(groupId);
+            List<TemplateField> fields = templateFieldRepository.findByGroupId(parsedGroupId);
+            return Optional.ofNullable(fields);
+        } catch (Exception e) {
+            System.err.println("Error fetching template: " + e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    public void deleteTemplate(Long templateId) {
+        try {
+            templateRepository.deleteById(templateId);
+        } catch (Exception e) {
+            System.err.println("Error deleting template: " + e.getMessage());
+        }
+    }
+
+    public void updateTemplate(Long templateId, Template template) {
+        try {
+            templateRepository.findById(templateId)
+                    .ifPresent(existingTemplate -> {
+                        existingTemplate.setEnglishName(template.getEnglishName());
+                        existingTemplate.setArabicName(template.getArabicName());
+                        existingTemplate.setEnglishDescription((template.getEnglishDescription()));
+                        existingTemplate.setArabicDescription(template.getArabicDescription());
+                        existingTemplate.setGroupId(template.getGroupId());
+                        templateRepository.save(existingTemplate);
+                    });
+        } catch (Exception e) {
+            System.err.println("Error updating template: " + e.getMessage());
         }
     }
 }
