@@ -12,10 +12,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TemplateWithFieldsRequestDTO {
-    private String EnglishName;
-    private String ArabicName;
-    private String EnglishDescription;
-    private String ArabicDescription;
+    private String englishName;
+    private String arabicName;
+    private String englishDescription;
+    private String arabicDescription;
     private Long groupId;
     private List<TemplateField> fields;
 }

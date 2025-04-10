@@ -1,9 +1,12 @@
 package com.ABIC.CustomerRequest.web.serviceManagment.service;
 
+import com.ABIC.CustomerRequest.util.Response;
+import com.ABIC.CustomerRequest.util.ResponseUtils;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.*;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.ServiceDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -36,7 +39,7 @@ public class ServiceManagementService {
         this.templateFieldValueRepository = templateFieldValueRepository;
     }
 
-    public Services createService(ServiceDTO dto) {
+    public void createService(ServiceDTO dto) {
         ServiceType serviceType = serviceTypeRepository.findById(dto.getServiceTypeId())
                 .orElseThrow(() -> new RuntimeException("Service Type not found"));
 
@@ -55,10 +58,10 @@ public class ServiceManagementService {
         service.setStatus(status);
         service.setSlaTime(dto.getSlaTime());
 
-        return serviceRepository.save(service);
+        serviceRepository.save(service);
     }
 
-    public Services updateService(Long serviceId, ServiceDTO service) {
+    public void updateService(Long serviceId, ServiceDTO service) {
         Services existingService = serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new RuntimeException("Service not found with ID: " + serviceId));
 
@@ -83,7 +86,6 @@ public class ServiceManagementService {
         existingService.setArabicPlaceHolder(service.getArabicPlaceHolder());
 
         serviceRepository.save(existingService);
-        return existingService;
     }
 
     public TemplateField getTemplateFieldById(Long id) {
@@ -104,7 +106,7 @@ public class ServiceManagementService {
         return serviceRepository.findByStatusEn(status, pageable);
     }
 
-    public String toggleServiceVisibility(Long serviceId, Long statusId) {
+    public void toggleServiceVisibility(Long serviceId, Long statusId) {
         Services service = serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new RuntimeException("Service not found with ID: " + serviceId));
 
@@ -114,7 +116,6 @@ public class ServiceManagementService {
         service.setStatus(status);
         serviceRepository.save(service);
 
-        return "Service visibility updated successfully";
     }
 
     public List<ServiceStatus> getAllServiceStatuses() {
@@ -157,13 +158,11 @@ public class ServiceManagementService {
         return templateFieldValueRepository.getAllByCustomerNumber(customerNumber, pageable);
     }
 
-    public String createTemplateField(TemplateField template) {
+    public void createTemplateField(TemplateField template) {
         try {
             templateFieldRepository.save(template);
-            return "Template Fields added successfully";
         } catch (Exception e) {
             System.err.println("Error deleting template: " + e.getMessage());
-            return "Error adding template Fields";
         }
     }
 
@@ -177,15 +176,21 @@ public class ServiceManagementService {
         }
     }
 
-    public String createTemplate(Template template) {
+    public Response<String> createTemplate(Template template) {
         try {
+            Optional<Template> existingTemplate = templateRepository.findByGroupId(template.getGroupId());
+            if (existingTemplate.isPresent()) {
+                return ResponseUtils.error(HttpStatus.CONFLICT.value(), "Template with this groupId already exists.");
+            }
+
             templateRepository.save(template);
-            return "Template added successfully";
+            return ResponseUtils.success(HttpStatus.CREATED.value(), "Template created successfully.");
         } catch (Exception e) {
-            System.err.println("Error deleting template: " + e.getMessage());
-            return "Error adding template";
+            System.err.println("Error creating template: " + e.getMessage());
+            return ResponseUtils.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed to create template.");
         }
     }
+
 
     public Optional<List<TemplateField>> getAllTemplateFields(String groupId) {
         try {
@@ -198,13 +203,11 @@ public class ServiceManagementService {
         }
     }
 
-    public String deleteTemplate(Long templateId) {
+    public void deleteTemplate(Long templateGroupId) {
         try {
-            templateRepository.deleteById(templateId);
-            return "Template deleted successfully";
+            templateRepository.deleteTemplateByGroupId(templateGroupId);
         } catch (Exception e) {
             System.err.println("Error deleting template: " + e.getMessage());
-            return "Error deleting template";
         }
     }
 
@@ -212,9 +215,9 @@ public class ServiceManagementService {
         try {
             templateRepository.findById(templateId)
                     .ifPresent(existingTemplate -> {
-                        existingTemplate.se(template.getEnglishName());
+                        existingTemplate.setEnglishName(template.getEnglishName());
                         existingTemplate.setArabicName(template.getArabicName());
-                        existingTemplate.setDescription(template.getDescription());
+                        existingTemplate.setEnglishDescription((template.getEnglishDescription()));
                         existingTemplate.setArabicDescription(template.getArabicDescription());
                         existingTemplate.setGroupId(template.getGroupId());
                         templateRepository.save(existingTemplate);

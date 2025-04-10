@@ -1,12 +1,17 @@
 package com.ABIC.CustomerRequest.web.serviceManagment.service;
 
+import com.ABIC.CustomerRequest.util.Response;
+import com.ABIC.CustomerRequest.util.ResponseUtils;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.*;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.ServiceDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -173,13 +178,21 @@ public class ServiceManagementService {
         }
     }
 
-    public void createTemplate(Template template) {
+    public Response<String> createTemplate(Template template) {
         try {
+            Optional<Template> existingTemplate = templateRepository.findByGroupId(template.getGroupId());
+            if (existingTemplate.isPresent()) {
+                return ResponseUtils.error(HttpStatus.CONFLICT.value(), "Template with this groupId already exists.");
+            }
+
             templateRepository.save(template);
+            return ResponseUtils.success(HttpStatus.CREATED.value(), "Template created successfully.");
         } catch (Exception e) {
-            System.err.println("Error deleting template: " + e.getMessage());
+            System.err.println("Error creating template: " + e.getMessage());
+            return ResponseUtils.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed to create template.");
         }
     }
+
 
     public Optional<List<TemplateField>> getAllTemplateFields(String groupId) {
         try {
@@ -192,9 +205,10 @@ public class ServiceManagementService {
         }
     }
 
-    public void deleteTemplate(Long templateId) {
+    @Transactional
+    public void deleteTemplate(Long templateGroupId) {
         try {
-            templateRepository.deleteById(templateId);
+            templateRepository.deleteTemplateByGroupId(templateGroupId);
         } catch (Exception e) {
             System.err.println("Error deleting template: " + e.getMessage());
         }

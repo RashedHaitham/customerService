@@ -25,7 +25,7 @@ public class Template {
     @Column(columnDefinition = "TEXT")
     private String ArabicDescription;
 
-    @Column(name = "group_id", nullable = false)
+    @Column(name = "group_id", nullable = false, unique = true)
     private Long groupId;
 
 }

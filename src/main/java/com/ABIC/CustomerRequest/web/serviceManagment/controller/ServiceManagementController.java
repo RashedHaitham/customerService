@@ -208,8 +208,13 @@ public class ServiceManagementController {
         template.setArabicDescription(request.getArabicDescription());
         template.setGroupId(request.getGroupId());
 
-        serviceManagementService.createTemplate(template);
+        Response<String> templateResponse = serviceManagementService.createTemplate(template);
+        if (templateResponse.getStatusCode() != HttpStatus.CREATED.value()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(templateResponse);
+        }
 
+
+        // Add fields
         for (TemplateField field : request.getFields()) {
             field.setGroupId(template.getGroupId());
             serviceManagementService.createTemplateField(field);
@@ -220,9 +225,10 @@ public class ServiceManagementController {
     }
 
 
-    @DeleteMapping("/template/{templateId}")
-    public ResponseEntity<Response<String>> deleteTemplate(@PathVariable Long templateId) {
-        serviceManagementService.deleteTemplate(templateId);
+
+    @DeleteMapping("/template/{templateGroupId}")
+    public ResponseEntity<Response<String>> deleteTemplate(@PathVariable Long templateGroupId) {
+        serviceManagementService.deleteTemplate(templateGroupId);
         Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template deleted successfully");
         return ResponseEntity.ok(response);
     }
