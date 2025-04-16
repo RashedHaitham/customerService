@@ -14,6 +14,7 @@ public class ServiceDTO {
     private String description;
     private String ArabicDescription;
 
+    private String placeHolder;
     private String ArabicPlaceHolder;
 
     private Long templateId;

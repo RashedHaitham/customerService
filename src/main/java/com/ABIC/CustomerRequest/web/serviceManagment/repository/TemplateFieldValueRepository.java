@@ -9,4 +9,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface TemplateFieldValueRepository extends JpaRepository<TemplateFieldValue,Long> {
     Page<TemplateFieldValue> getAllByCustomerNumber(String customerNumber,
                                                Pageable pageable);
+
+    void deleteByFieldId(Long id);
 }

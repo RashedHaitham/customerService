@@ -1,5 +1,6 @@
 package com.ABIC.CustomerRequest.web.serviceManagment.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -43,6 +44,7 @@ public class TemplateField {
     private String extraDataAr;
 
     @Column(name = "group_id", nullable = false)
+    @JsonIgnore
     private Long groupId;
 
 }

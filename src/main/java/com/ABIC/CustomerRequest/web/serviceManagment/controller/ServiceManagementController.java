@@ -4,8 +4,9 @@ import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.*;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.UpdateRequestDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.service.RequestService;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.*;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.CreateTemplateWithFieldsRequestDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.ServiceDTO;
-import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.TemplateWithFieldsRequestDTO;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.UpdateTemplateWithFieldsRequestDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementService;
 import com.ABIC.CustomerRequest.util.PaginatedResponse;
 import com.ABIC.CustomerRequest.util.Response;
@@ -194,36 +195,21 @@ public class ServiceManagementController {
                                                                                  @RequestParam(defaultValue = "0") int page,
                                                                                  @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<TemplateFieldValue> templates = serviceManagementService.getAllSubs(customerNumber, pageable);
+        Page<TemplateFieldValue> templates = serviceManagementService.getSubmissionsByCustomerNumber(customerNumber, pageable);
         Response<Page<TemplateFieldValue>> response = ResponseUtils.success(HttpStatus.OK.value(), templates);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/templateWithFields")
-    public ResponseEntity<Response<String>> createTemplateWithFields(@RequestBody TemplateWithFieldsRequestDTO request) {
-        Template template = new Template();
-        template.setEnglishName(request.getEnglishName());
-        template.setArabicName(request.getArabicName());
-        template.setEnglishDescription(request.getEnglishDescription());
-        template.setArabicDescription(request.getArabicDescription());
-        template.setGroupId(request.getGroupId());
+    public ResponseEntity<Response<String>> createTemplateWithFields(@RequestBody CreateTemplateWithFieldsRequestDTO request) {
+        Response<String> response = serviceManagementService.createTemplateWithFields(request);
 
-        Response<String> templateResponse = serviceManagementService.createTemplate(template);
-        if (templateResponse.getStatusCode() != HttpStatus.CREATED.value()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(templateResponse);
+        if (response.getStatusCode() == HttpStatus.CREATED.value()) {
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } else {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
-
-
-        // Add fields
-        for (TemplateField field : request.getFields()) {
-            field.setGroupId(template.getGroupId());
-            serviceManagementService.createTemplateField(field);
-        }
-
-        Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template and its fields added successfully");
-        return ResponseEntity.ok(response);
     }
-
 
 
     @DeleteMapping("/template/{templateGroupId}")
@@ -233,18 +219,16 @@ public class ServiceManagementController {
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/template/{templateId}")
-    public ResponseEntity<Response<String>> updateTemplate(@PathVariable Long templateId, @RequestBody Template template) {
-        serviceManagementService.updateTemplate(templateId, template);
-        Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template updated successfully");
-        return ResponseEntity.ok(response);
-    }
+    @PatchMapping("/template/{groupId}")
+    public ResponseEntity<Response<String>> updateTemplate(@PathVariable Long groupId, @RequestBody UpdateTemplateWithFieldsRequestDTO request) {
+        boolean updated = serviceManagementService.updateTemplate(groupId, request);
 
-    @DeleteMapping("/templateField/{templateFieldId}")
-    public ResponseEntity<Response<String>> deleteTemplateField(@PathVariable Long templateFieldId) {
-        serviceManagementService.deleteTemplateField(templateFieldId);
-        Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template field deleted successfully");
-        return ResponseEntity.ok(response);
+        if (!updated) {
+            Response<String> notFoundResponse = ResponseUtils.error(HttpStatus.NOT_FOUND.value(), "Template not found for group ID: " + groupId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(notFoundResponse);
+        }
 
+        Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template and Fields updated successfully");
+        return ResponseEntity.ok(response);
     }
 }

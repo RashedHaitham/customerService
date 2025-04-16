@@ -211,7 +211,7 @@ public class ServiceManagementControllerTest {
     @Test
     void testGetAllSubs() throws Exception {
         Page<TemplateFieldValue> page = new PageImpl<>(List.of(new TemplateFieldValue()));
-        Mockito.when(serviceManagementService.getAllSubs(eq("SUB-111"), any(Pageable.class)))
+        Mockito.when(serviceManagementService.getSubmissionsByCustomerNumber(eq("SUB-111"), any(Pageable.class)))
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/services/submissions/SUB-111"))
@@ -231,7 +231,7 @@ public class ServiceManagementControllerTest {
 
         Page<TemplateFieldValue> mockPage = new PageImpl<>(List.of(mockValue));
 
-        Mockito.when(serviceManagementService.getAllSubs(eq("CUST-001"), any(Pageable.class)))
+        Mockito.when(serviceManagementService.getSubmissionsByCustomerNumber(eq("CUST-001"), any(Pageable.class)))
                 .thenReturn(mockPage);
 
         mockMvc.perform(get("/api/services/submissions/CUST-001")

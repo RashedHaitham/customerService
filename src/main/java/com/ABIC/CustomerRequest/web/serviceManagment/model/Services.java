@@ -19,7 +19,6 @@ public class Services {
     private String description;
     private String ArabicDescription;
 
-    private String placeHolder;
     private String ArabicPlaceHolder;
 
     @ManyToOne
