@@ -28,4 +28,7 @@ public class Template {
     @Column(name = "group_id", nullable = false, unique = true)
     private Long groupId;
 
+    @Column(name = "hidden", nullable = false)
+    private boolean hidden = false;
+
 }

@@ -231,4 +231,11 @@ public class ServiceManagementController {
         Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template and Fields updated successfully");
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/template/field/{fieldId}")
+    public ResponseEntity<Response<String>> deleteTemplateField(@PathVariable Long fieldId) {
+        serviceManagementService.deleteTemplateField(fieldId);
+        Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template field deleted successfully");
+        return ResponseEntity.ok(response);
+    }
 }

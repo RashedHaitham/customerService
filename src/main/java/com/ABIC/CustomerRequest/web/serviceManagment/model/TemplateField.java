@@ -47,4 +47,7 @@ public class TemplateField {
     @JsonIgnore
     private Long groupId;
 
+    @Column(name = "hidden", nullable = false)
+    private boolean hidden = false;
+
 }

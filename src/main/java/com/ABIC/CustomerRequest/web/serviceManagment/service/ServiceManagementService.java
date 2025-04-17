@@ -171,35 +171,51 @@ public class ServiceManagementService {
         }
     }
 
-    @Transactional
     public void deleteTemplate(Long templateGroupId) {
         try {
             Optional<Template> optionalTemplate = templateRepository.findByGroupId(templateGroupId);
+            List<TemplateField> optionalTemplateField = templateFieldRepository.findByGroupId(templateGroupId);
 
             if (optionalTemplate.isEmpty()) {
                 throw new RuntimeException("Template not found with groupId: " + templateGroupId);
             }
 
-            Template template = optionalTemplate.get();
-
-            List<TemplateField> fields = templateFieldRepository.findByGroupId(templateGroupId);
-
-            for (TemplateField field : fields) {
-                templateFieldValueRepository.deleteByFieldId(field.getId());
+            if (optionalTemplateField.isEmpty()) {
+                throw new RuntimeException("cannot delete Template field, its not found with groupId: " + templateGroupId);
             }
 
-            templateFieldRepository.deleteAll(fields);
+            for (TemplateField templateField : optionalTemplateField) {
+                templateField.setHidden(true);
+                templateFieldRepository.save(templateField);
+            }
 
-            serviceRepository.deleteAllByTemplateId(template.getId());
-
-            templateRepository.delete(template);
+            Template template = optionalTemplate.get();
+            template.setHidden(true);
+            templateRepository.save(template);
 
         } catch (Exception e) {
             System.err.println("Error deleting template: " + e.getMessage());
-            throw new RuntimeException("Could not delete template group: " + templateGroupId);
+            throw new RuntimeException("Could not delete template: " + templateGroupId);
         }
     }
 
+    public void deleteTemplateField(Long fieldId) {
+        try {
+            Optional<TemplateField> field = templateFieldRepository.findById(fieldId);
+
+            if(field.isEmpty()) {
+                throw new RuntimeException("Template field not found with ID: " + fieldId);
+            }
+
+            TemplateField templateField = field.get();
+            templateField.setHidden(true);
+            templateFieldRepository.save(templateField);
+
+        } catch (Exception e) {
+            System.err.println("Error deleting template field: " + e.getMessage());
+            throw new RuntimeException("Could not delete template field: " + fieldId);
+        }
+    }
 
 
     @Transactional
@@ -233,6 +249,7 @@ public class ServiceManagementService {
         template.setArabicName(request.getArabicName());
         template.setEnglishDescription(request.getEnglishDescription());
         template.setArabicDescription(request.getArabicDescription());
+        template.setHidden(request.isHidden());
         return template;
     }
 

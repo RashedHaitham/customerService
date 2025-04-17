@@ -15,6 +15,7 @@ public class UpdateTemplateWithFieldsRequestDTO {
     private String arabicName;
     private String englishDescription;
     private String arabicDescription;
+    boolean hidden;
 
     private List<TemplateField> fields;
 }

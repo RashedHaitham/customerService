@@ -171,35 +171,51 @@ public class ServiceManagementService {
         }
     }
 
-    @Transactional
     public void deleteTemplate(Long templateGroupId) {
         try {
             Optional<Template> optionalTemplate = templateRepository.findByGroupId(templateGroupId);
+            List<TemplateField> optionalTemplateField = templateFieldRepository.findByGroupId(templateGroupId);
 
             if (optionalTemplate.isEmpty()) {
                 throw new RuntimeException("Template not found with groupId: " + templateGroupId);
             }
 
-            Template template = optionalTemplate.get();
-
-            List<TemplateField> fields = templateFieldRepository.findByGroupId(templateGroupId);
-
-            for (TemplateField field : fields) {
-                templateFieldValueRepository.deleteByFieldId(field.getId());
+            if (optionalTemplateField.isEmpty()) {
+                throw new RuntimeException("cannot delete Template field, its not found with groupId: " + templateGroupId);
             }
 
-            templateFieldRepository.deleteAll(fields);
+            for (TemplateField templateField : optionalTemplateField) {
+                templateField.setHidden(true);
+                templateFieldRepository.save(templateField);
+            }
 
-            serviceRepository.deleteAllByTemplateId(template.getId());
-
-            templateRepository.delete(template);
+            Template template = optionalTemplate.get();
+            template.setHidden(true);
+            templateRepository.save(template);
 
         } catch (Exception e) {
-            System.err.println("Error deleting template: " + e.getMessage());
-            throw new RuntimeException("Could not delete template group: " + templateGroupId);
+            System.err.println("Error hiding template: " + e.getMessage());
+            throw new RuntimeException("Could not hide template: " + templateGroupId);
         }
     }
 
+    public void deleteTemplateField(Long fieldId) {
+        try {
+            Optional<TemplateField> field = templateFieldRepository.findById(fieldId);
+
+            if(field.isEmpty()) {
+                throw new RuntimeException("Template field not found with ID: " + fieldId);
+            }
+
+            TemplateField templateField = field.get();
+            templateField.setHidden(true);
+            templateFieldRepository.save(templateField);
+
+        } catch (Exception e) {
+            System.err.println("Error deleting template field: " + e.getMessage());
+            throw new RuntimeException("Could not delete template field: " + fieldId);
+        }
+    }
 
 
     @Transactional
@@ -210,53 +226,62 @@ public class ServiceManagementService {
             return false;
         }
 
-        Template existingTemplate = optionalTemplate.get();
-        existingTemplate.setEnglishName(request.getEnglishName());
-        existingTemplate.setArabicName(request.getArabicName());
-        existingTemplate.setEnglishDescription(request.getEnglishDescription());
-        existingTemplate.setArabicDescription(request.getArabicDescription());
-
+        Template existingTemplate = updateTemplateDetails(optionalTemplate.get(), request);
         templateRepository.save(existingTemplate);
 
-        List<TemplateField> existingFields = templateFieldRepository.findByGroupId(groupId);
-        Map<Long, TemplateField> existingFieldMap = existingFields.stream()
-                .collect(Collectors.toMap(TemplateField::getId, f -> f));
+        Map<Long, TemplateField> existingFieldMap = templateFieldRepository.findByGroupId(groupId).stream()
+                .collect(Collectors.toMap(TemplateField::getId, field -> field));
 
         for (TemplateField incomingField : request.getFields()) {
             if (incomingField.getId() != null && existingFieldMap.containsKey(incomingField.getId())) {
-                TemplateField fieldToUpdate = existingFieldMap.get(incomingField.getId());
-
-                fieldToUpdate.setLabelEn(incomingField.getLabelEn());
-                fieldToUpdate.setLabelAr(incomingField.getLabelAr());
-                fieldToUpdate.setControlType(incomingField.getControlType());
-                fieldToUpdate.setRequired(incomingField.isRequired());
-                fieldToUpdate.setAttachment(incomingField.isAttachment());
-                fieldToUpdate.setSorting(incomingField.getSorting());
-                fieldToUpdate.setPlaceholderEn(incomingField.getPlaceholderEn());
-                fieldToUpdate.setPlaceholderAr(incomingField.getPlaceholderAr());
-                fieldToUpdate.setExtraDataEn(incomingField.getExtraDataEn());
-                fieldToUpdate.setExtraDataAr(incomingField.getExtraDataAr());
-
-                templateFieldRepository.save(fieldToUpdate);
-            }else {
-                TemplateField newField = new TemplateField();
-                newField.setLabelEn(incomingField.getLabelEn());
-                newField.setLabelAr(incomingField.getLabelAr());
-                newField.setControlType(incomingField.getControlType());
-                newField.setRequired(incomingField.isRequired());
-                newField.setAttachment(incomingField.isAttachment());
-                newField.setSorting(incomingField.getSorting());
-                newField.setPlaceholderEn(incomingField.getPlaceholderEn());
-                newField.setPlaceholderAr(incomingField.getPlaceholderAr());
-                newField.setExtraDataEn(incomingField.getExtraDataEn());
-                newField.setExtraDataAr(incomingField.getExtraDataAr());
-                newField.setGroupId(groupId);
-
+                updateExistingField(existingFieldMap.get(incomingField.getId()), incomingField);
+            } else {
+                TemplateField newField = createNewField(incomingField, groupId);
                 templateFieldRepository.save(newField);
             }
         }
 
         return true;
+    }
+
+    private Template updateTemplateDetails(Template template, UpdateTemplateWithFieldsRequestDTO request) {
+        template.setEnglishName(request.getEnglishName());
+        template.setArabicName(request.getArabicName());
+        template.setEnglishDescription(request.getEnglishDescription());
+        template.setArabicDescription(request.getArabicDescription());
+        template.setHidden(request.isHidden());
+        return template;
+    }
+
+    private void updateExistingField(TemplateField existingField, TemplateField incomingField) {
+        existingField.setLabelEn(incomingField.getLabelEn());
+        existingField.setLabelAr(incomingField.getLabelAr());
+        existingField.setControlType(incomingField.getControlType());
+        existingField.setRequired(incomingField.isRequired());
+        existingField.setAttachment(incomingField.isAttachment());
+        existingField.setSorting(incomingField.getSorting());
+        existingField.setPlaceholderEn(incomingField.getPlaceholderEn());
+        existingField.setPlaceholderAr(incomingField.getPlaceholderAr());
+        existingField.setExtraDataEn(incomingField.getExtraDataEn());
+        existingField.setExtraDataAr(incomingField.getExtraDataAr());
+
+        templateFieldRepository.save(existingField);
+    }
+
+    private TemplateField createNewField(TemplateField incomingField, Long groupId) {
+        TemplateField newField = new TemplateField();
+        newField.setLabelEn(incomingField.getLabelEn());
+        newField.setLabelAr(incomingField.getLabelAr());
+        newField.setControlType(incomingField.getControlType());
+        newField.setRequired(incomingField.isRequired());
+        newField.setAttachment(incomingField.isAttachment());
+        newField.setSorting(incomingField.getSorting());
+        newField.setPlaceholderEn(incomingField.getPlaceholderEn());
+        newField.setPlaceholderAr(incomingField.getPlaceholderAr());
+        newField.setExtraDataEn(incomingField.getExtraDataEn());
+        newField.setExtraDataAr(incomingField.getExtraDataAr());
+        newField.setGroupId(groupId);
+        return newField;
     }
 
 
