@@ -10,5 +10,5 @@ public interface TemplateRepository extends JpaRepository<Template,Long> {
 
     Optional<Template> findByGroupId(Long groupId);
 
-    void deleteTemplateByGroupId(Long templateGroupId);
+    List<Template> findAllByHiddenIsFalse();
 }

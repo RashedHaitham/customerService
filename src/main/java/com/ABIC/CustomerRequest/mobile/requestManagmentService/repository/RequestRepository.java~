@@ -10,9 +10,6 @@ import java.util.List;
 public interface RequestRepository extends JpaRepository<Request, String> {
     Request findByRequestNumber(String requestNumber);
 
-    Page<Request> findByStatusAndCustomerNumber(Request.Status status,String customerNumber, Pageable pageable);
-
-
     @Query("SELECT r.status, COUNT(r) FROM Request r GROUP BY r.status")
     List<Object[]> countRequestsByStatus();
 

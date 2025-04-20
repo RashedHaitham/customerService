@@ -7,6 +7,7 @@ import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.CreateTemplateWit
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.ServiceDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.UpdateTemplateWithFieldsRequestDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.repository.*;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -140,7 +141,7 @@ public class ServiceManagementService {
 
     public List<Template> getAllTemplates() {
         try {
-            return templateRepository.findAll();
+            return templateRepository.findAllByHiddenIsFalse();
         } catch (Exception e) {
             System.err.println("Error fetching templates: " + e.getMessage());
             return List.of();
@@ -149,7 +150,7 @@ public class ServiceManagementService {
 
     public List<TemplateField> getTemplateFieldsByGroupId(Long groupId) {
         try {
-            return templateFieldRepository.findByGroupId(groupId);
+            return templateFieldRepository.findByGroupIdAndHiddenIsFalse(groupId);
         } catch (Exception e) {
             System.err.println("Error fetching template fields by group ID: " + e.getMessage());
             return List.of();
@@ -163,7 +164,7 @@ public class ServiceManagementService {
     public Optional<List<TemplateField>> getAllTemplateFields(String groupId) {
         try {
             Long parsedGroupId = Long.parseLong(groupId);
-            List<TemplateField> fields = templateFieldRepository.findByGroupId(parsedGroupId);
+            List<TemplateField> fields = templateFieldRepository.findByGroupIdAndHiddenIsFalse(parsedGroupId);
             return Optional.ofNullable(fields);
         } catch (Exception e) {
             System.err.println("Error fetching template: " + e.getMessage());
@@ -172,50 +173,46 @@ public class ServiceManagementService {
     }
 
     public void deleteTemplate(Long templateGroupId) {
-        try {
-            Optional<Template> optionalTemplate = templateRepository.findByGroupId(templateGroupId);
-            List<TemplateField> optionalTemplateField = templateFieldRepository.findByGroupId(templateGroupId);
+        triggerTemplate(templateGroupId,true);
+    }
 
-            if (optionalTemplate.isEmpty()) {
-                throw new RuntimeException("Template not found with groupId: " + templateGroupId);
-            }
+    public void restoreTemplate(Long templateGroupId) {
+        triggerTemplate(templateGroupId,false);
+    }
 
-            if (optionalTemplateField.isEmpty()) {
-                throw new RuntimeException("cannot delete Template field, its not found with groupId: " + templateGroupId);
-            }
+    private void triggerTemplate(Long templateGroupId, boolean hidden) {
+        Template template = templateRepository.findByGroupId(templateGroupId)
+                .orElseThrow(() -> new EntityNotFoundException("Template not found with groupId: " + templateGroupId));
 
-            for (TemplateField templateField : optionalTemplateField) {
-                templateField.setHidden(true);
-                templateFieldRepository.save(templateField);
-            }
+        List<TemplateField> fields = templateFieldRepository.findByGroupIdAndHiddenIsFalse(templateGroupId);
 
-            Template template = optionalTemplate.get();
-            template.setHidden(true);
-            templateRepository.save(template);
-
-        } catch (Exception e) {
-            System.err.println("Error hiding template: " + e.getMessage());
-            throw new RuntimeException("Could not hide template: " + templateGroupId);
+        for (TemplateField field : fields) {
+            field.setHidden(hidden);
         }
+
+        template.setHidden(hidden);
+
+        templateRepository.save(template);
+        templateFieldRepository.saveAll(fields);
     }
 
     public void deleteTemplateField(Long fieldId) {
-        try {
-            Optional<TemplateField> field = templateFieldRepository.findById(fieldId);
-
-            if(field.isEmpty()) {
-                throw new RuntimeException("Template field not found with ID: " + fieldId);
-            }
-
-            TemplateField templateField = field.get();
-            templateField.setHidden(true);
-            templateFieldRepository.save(templateField);
-
-        } catch (Exception e) {
-            System.err.println("Error deleting template field: " + e.getMessage());
-            throw new RuntimeException("Could not delete template field: " + fieldId);
-        }
+        triggerTemplateField(fieldId,true);
     }
+
+    public void restoreTemplateField(Long fieldId) {
+        triggerTemplateField(fieldId,false);
+    }
+
+    private void triggerTemplateField(Long fieldId, boolean hidden) {
+        templateFieldRepository.findById(fieldId).ifPresentOrElse(field -> {
+            field.setHidden(hidden);
+            templateFieldRepository.save(field);
+        }, () -> {
+            throw new EntityNotFoundException("Template field not found with ID: " + fieldId);
+        });
+    }
+
 
 
     @Transactional

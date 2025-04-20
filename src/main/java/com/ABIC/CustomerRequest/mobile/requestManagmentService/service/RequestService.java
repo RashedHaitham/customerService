@@ -61,6 +61,10 @@ public class RequestService {
         return requestRepository.findByStatus(status, pageable);
     }
 
+    public Page<Request> findByStatusAndCustomerNumber(Request.Status status,String customerNumber ,Pageable pageable){
+        return requestRepository.findByStatusAndCustomerNumber(status,customerNumber,pageable);
+    }
+
 
     public Optional<Request> getRequestByNumber(String requestNumber) {
         return Optional.ofNullable(requestRepository.findByRequestNumber(requestNumber));

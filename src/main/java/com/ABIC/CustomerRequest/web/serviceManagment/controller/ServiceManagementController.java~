@@ -232,23 +232,16 @@ public class ServiceManagementController {
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/template-field/{fieldId}")
+    @DeleteMapping("/template/field/{fieldId}")
     public ResponseEntity<Response<String>> deleteTemplateField(@PathVariable Long fieldId) {
         serviceManagementService.deleteTemplateField(fieldId);
         Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template field deleted successfully");
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/template/restore/{groupId}")
+    @PatchMapping("/template/activate/{groupId}")
     public ResponseEntity<Response<String>> restoreTemplate(@PathVariable Long groupId) {
         serviceManagementService.restoreTemplate(groupId);
-        Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template activated successfully");
-        return ResponseEntity.ok(response);
-    }
-
-    @PatchMapping("/template-field/restore/{fieldId}")
-    public ResponseEntity<Response<String>> restoreTemplateField(@PathVariable Long fieldId) {
-        serviceManagementService.restoreTemplateField(fieldId);
         Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template activated successfully");
         return ResponseEntity.ok(response);
     }

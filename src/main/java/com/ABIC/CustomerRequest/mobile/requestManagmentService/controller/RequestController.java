@@ -59,7 +59,7 @@ public class RequestController {
 //        }
 
         if (status != null) {
-            requestsPage = requestService.getRequestsByStatus(status, pageable);
+            requestsPage = requestService.findByStatusAndCustomerNumber(status,customerNumber, pageable);
         } else {
             requestsPage = requestService.getAllRequests(customerNumber,pageable);
         }
