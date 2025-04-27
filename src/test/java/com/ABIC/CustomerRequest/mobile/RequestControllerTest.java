@@ -92,26 +92,6 @@ class RequestControllerTest {
         assertEquals("Invalid Channel-Id", response.getBody().getData());
     }
 
-    @Test
-    void testGetRequestByNumberFound() {
-        Request request = new Request();
-        when(requestService.getRequestByNumber("REQ-100000")).thenReturn(Optional.of(request));
-
-        ResponseEntity<Response<Request>> response = requestController.getRequestByNumber("REQ-100000");
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(request, response.getBody().getData());
-    }
-
-    @Test
-    void testGetRequestByNumberNotFound() {
-        when(requestService.getRequestByNumber("REQ-000")).thenReturn(Optional.empty());
-
-        ResponseEntity<Response<Request>> response = requestController.getRequestByNumber("REQ-000");
-
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertNull(response.getBody().getData());
-    }
 
     @Test
     void testGetServiceTypes() {

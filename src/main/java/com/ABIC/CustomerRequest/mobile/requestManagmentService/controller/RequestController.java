@@ -105,20 +105,6 @@ public class RequestController {
         }
     }
 
-
-    @GetMapping("/{requestNumber}")
-    public ResponseEntity<Response<Request>> getRequestByNumber(@PathVariable String requestNumber) {
-        return requestService.getRequestByNumber(requestNumber)
-                .map(request -> {
-                    Response<Request> response = ResponseUtils.success(HttpStatus.OK.value(), request);
-                    return ResponseEntity.ok(response);
-                })
-                .orElseGet(() -> {
-                    Response<Request> errorResponse = ResponseUtils.error(HttpStatus.NOT_FOUND.value(), null);
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
-                });
-    }
-
     @GetMapping("/serviceTypes")
     public ResponseEntity<Map<String, Object>> getServiceTypes() {
         List<ServiceType> serviceTypes = requestService.getAllServiceTypes();
@@ -154,7 +140,7 @@ public class RequestController {
     }
 
     @GetMapping("/templates/{groupId}")
-    public ResponseEntity<Response<List<TemplateField>>> getTemplatesByGroupId(@PathVariable Long groupId) {
+    public ResponseEntity<Response<List<TemplateField>>> getTemplateFieldsByGroupId(@PathVariable Long groupId) {
         List<TemplateField> templates = serviceManagementService.getTemplateFieldsByGroupId(groupId);
         Response<List<TemplateField>> response = ResponseUtils.success(HttpStatus.OK.value(), templates);
         return ResponseEntity.ok(response);

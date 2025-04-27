@@ -16,7 +16,6 @@ public class CreateTemplateWithFieldsRequestDTO {
     private String arabicName;
     private String englishDescription;
     private String arabicDescription;
-    private Long groupId;
 
     private List<TemplateField> fields;
 }

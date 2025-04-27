@@ -1,11 +1,11 @@
 package com.ABIC.CustomerRequest.web.serviceManagment.service;
 
+import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.Request;
+import com.ABIC.CustomerRequest.mobile.requestManagmentService.repository.RequestRepository;
 import com.ABIC.CustomerRequest.util.Response;
 import com.ABIC.CustomerRequest.util.ResponseUtils;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.*;
-import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.CreateTemplateWithFieldsRequestDTO;
-import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.ServiceDTO;
-import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.UpdateTemplateWithFieldsRequestDTO;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.*;
 import com.ABIC.CustomerRequest.web.serviceManagment.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,6 +26,7 @@ public class ServiceManagementService {
 
     private final ServiceRepository serviceRepository;
 
+    private final RequestRepository requestRepository;
     private final ServiceTypeRepository serviceTypeRepository;
 
     private final ServiceStatusRepository serviceStatusRepository;
@@ -35,15 +37,19 @@ public class ServiceManagementService {
 
     private final TemplateFieldValueRepository templateFieldValueRepository;
 
+    private final ControlTypeLookupRepository controlTypeLookupRepository;
+
 
     @Autowired
-    public ServiceManagementService(ServiceRepository serviceRepository, ServiceTypeRepository serviceTypeRepository, ServiceStatusRepository serviceStatusRepository, TemplateRepository templateRepository, TemplateFieldRepository templateFieldRepository, TemplateFieldValueRepository templateFieldValueRepository) {
+    public ServiceManagementService(ServiceRepository serviceRepository, RequestRepository requestRepository, ServiceTypeRepository serviceTypeRepository, ServiceStatusRepository serviceStatusRepository, TemplateRepository templateRepository, TemplateFieldRepository templateFieldRepository, TemplateFieldValueRepository templateFieldValueRepository, ControlTypeLookupRepository controlTypeLookupRepository) {
         this.serviceRepository = serviceRepository;
+        this.requestRepository = requestRepository;
         this.serviceTypeRepository = serviceTypeRepository;
         this.serviceStatusRepository = serviceStatusRepository;
         this.templateRepository = templateRepository;
         this.templateFieldRepository = templateFieldRepository;
         this.templateFieldValueRepository = templateFieldValueRepository;
+        this.controlTypeLookupRepository = controlTypeLookupRepository;
     }
 
     public void createService(ServiceDTO dto) {
@@ -61,7 +67,6 @@ public class ServiceManagementService {
         service.setEnglishName(dto.getEnglishName());
         service.setDescription(dto.getDescription());
         service.setArabicDescription(dto.getArabicDescription());
-        service.setArabicPlaceHolder(dto.getArabicPlaceHolder());
         service.setServiceType(serviceType);
         service.setStatus(status);
         service.setTemplate(template);
@@ -91,7 +96,6 @@ public class ServiceManagementService {
 
         existingService.setSlaTime(service.getSlaTime());
 
-        existingService.setArabicPlaceHolder(service.getArabicPlaceHolder());
 
         Template template = templateRepository.findById(service.getTemplateId())
                 .orElseThrow(() -> new RuntimeException("Template not found"));
@@ -246,7 +250,6 @@ public class ServiceManagementService {
         template.setArabicName(request.getArabicName());
         template.setEnglishDescription(request.getEnglishDescription());
         template.setArabicDescription(request.getArabicDescription());
-        template.setHidden(request.isHidden());
         return template;
     }
 
@@ -281,26 +284,110 @@ public class ServiceManagementService {
         return newField;
     }
 
-
     public Response<String> createTemplateWithFields(CreateTemplateWithFieldsRequestDTO request) {
         try {
+            // Save the template
             Template template = new Template();
             template.setEnglishName(request.getEnglishName());
             template.setArabicName(request.getArabicName());
             template.setEnglishDescription(request.getEnglishDescription());
             template.setArabicDescription(request.getArabicDescription());
-            template.setGroupId(request.getGroupId());
+            template.setGroupId(UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE);
 
             Template savedTemplate = templateRepository.save(template);
 
             for (TemplateField field : request.getFields()) {
+                String controlTypeCode = field.getControlType().getCode();
+
+                ControlTypeLookup controlType = (ControlTypeLookup) controlTypeLookupRepository.findByCode(controlTypeCode)
+                        .orElseThrow(() -> new RuntimeException("ControlType with code [" + controlTypeCode + "] not found"));
+
+                field.setControlType(controlType);
                 field.setGroupId(savedTemplate.getGroupId());
+
                 templateFieldRepository.save(field);
             }
 
+
             return ResponseUtils.success(HttpStatus.CREATED.value(), "Template and fields created successfully");
+
         } catch (Exception e) {
             return ResponseUtils.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed to create template: " + e.getMessage());
         }
     }
+
+
+    public Optional<List<ControlTypeLookup>> getControlTypes() {
+        try {
+            return Optional.of(controlTypeLookupRepository.findAll());
+        } catch (Exception e) {
+            System.err.println("Error fetching control types: " + e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    public Page<ServiceResponseDTO> getAllServiceDTOs(Pageable pageable) {
+        Page<Services> servicesPage = serviceRepository.findAll(pageable);
+        return servicesPage.map(this::mapToDTO);
+    }
+
+    private ServiceResponseDTO mapToDTO(Services service) {
+        Template template = service.getTemplate();
+        ServiceType serviceType = service.getServiceType();
+        ServiceStatus status = service.getStatus();
+
+        return new ServiceResponseDTO(
+                service.getId(),
+                service.getArabicName(),
+                service.getEnglishName(),
+                service.getDescription(),
+                service.getArabicDescription(),
+
+                template.getId(),
+                template.getGroupId(),
+                template.getEnglishName(),
+                template.getArabicName(),
+
+                serviceType.getId(),
+                serviceType.getTypeEn(),
+                serviceType.getTypeAr(),
+
+
+                status.getId(),
+                status.getStatusAr(),
+                status.getStatusEn(),
+
+                service.getSlaTime()
+        );
+    }
+
+    public Optional<RequestDetailsDTO> getRequestDetails(String requestNumber) {
+        return requestRepository.findById(requestNumber)
+                .map(request -> {
+                    List<TemplateFieldValue> fieldValues = templateFieldValueRepository
+                            .findByCustomerNumber( request.getCustomerNumber());
+
+                    List<FieldValueDTO> fields = fieldValues.stream()
+                            .map(fv -> new FieldValueDTO(fv.getField().getId(), fv.getField().getLabelEn(), fv.getValue()))
+                            .toList();
+
+                    return new RequestDetailsDTO(
+                            request.getRequestNumber(),
+                            request.getDescription(),
+                            request.getRequestedBy(),
+                            request.getCustomerNumber(),
+                            request.getStatusUpdatedBy(),
+                            request.getServiceType(),
+                            request.getStatus().name(),
+                            request.getTime(),
+                            request.getSlaTime(),
+                            request.getComment(),
+                            fields
+                    );
+                });
+    }
+
+
+
+
 }

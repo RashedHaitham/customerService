@@ -139,7 +139,7 @@ class RequestControllerTest {
     @Test
     void testSubmitForm() {
         TemplateSubmissionDTO dto = new TemplateSubmissionDTO();
-        when(requestService.submitTemplateForm(dto,"TRS052029221407438700594511285f")).thenReturn("SUB123");
+        when(requestService.submitTemplateForm(dto,"TRS052029221407438700594511285f","1234")).thenReturn("SUB123");
 
         ResponseEntity<String> response = requestController.submitForm(dto,"TRS052029221407438700594511285f");
 

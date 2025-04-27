@@ -20,9 +20,10 @@ public class TemplateField {
     @Column(nullable = false)
     private String labelAr;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "control_type", nullable = false)
-    private ControlType controlType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "control_type", referencedColumnName = "code", nullable = false)
+    private ControlTypeLookup controlType;
+
 
     @Column(nullable = false)
     private boolean required;

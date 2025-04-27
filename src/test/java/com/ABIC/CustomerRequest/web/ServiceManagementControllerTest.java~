@@ -10,7 +10,6 @@ import com.ABIC.CustomerRequest.web.config.JWTFilter;
 import com.ABIC.CustomerRequest.web.config.SecurityConfig;
 import com.ABIC.CustomerRequest.web.serviceManagment.controller.ServiceManagementController;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.*;
-import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.RequestDetailsDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.ServiceDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -89,34 +88,24 @@ public class ServiceManagementControllerTest {
 
     @Test
     void testGetRequestByNumberFound() {
-        // Given
-        RequestDetailsDTO dto = new RequestDetailsDTO();
-        dto.setRequestNumber("REQ-100000");
-        dto.setDescription("Sample description");
+        Request request = new Request();
+        when(requestService.getRequestByNumber("REQ-100000")).thenReturn(Optional.of(request));
 
-        when(serviceManagementService.getRequestDetails("REQ-100000")).thenReturn(Optional.of(dto));
+        ResponseEntity<Response<Request>> response = serviceManagementController.getRequestByNumber("REQ-100000");
 
-        // When
-        ResponseEntity<Response<RequestDetailsDTO>> response = serviceManagementController.getRequestByNumber("REQ-100000");
-
-        // Then
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(dto, response.getBody().getData());
+        assertEquals(request, response.getBody().getData());
     }
 
     @Test
     void testGetRequestByNumberNotFound() {
-        // Given
-        when(serviceManagementService.getRequestDetails("REQ-000")).thenReturn(Optional.empty());
+        when(requestService.getRequestByNumber("REQ-000")).thenReturn(Optional.empty());
 
-        // When
-        ResponseEntity<Response<RequestDetailsDTO>> response = serviceManagementController.getRequestByNumber("REQ-000");
+        ResponseEntity<Response<Request>> response = serviceManagementController.getRequestByNumber("REQ-000");
 
-        // Then
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNull(response.getBody().getData());
     }
-
 
     @Test
     void testUpdateServiceStatus() throws Exception {

@@ -195,7 +195,7 @@ public class RequestService {
             templateFieldValueRepository.save(value);
         }
 
-        return "submitted successfully";
+        return "submissionId";
     }
 
 

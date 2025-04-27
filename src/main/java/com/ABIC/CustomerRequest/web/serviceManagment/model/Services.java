@@ -18,9 +18,7 @@ public class Services {
 
     private String description;
     private String ArabicDescription;
-
-    private String ArabicPlaceHolder;
-
+    
     @ManyToOne
     @JoinColumn(name = "service_type_id", nullable = false)
     private ServiceType serviceType;

@@ -4,9 +4,7 @@ import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.*;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.UpdateRequestDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.service.RequestService;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.*;
-import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.CreateTemplateWithFieldsRequestDTO;
-import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.ServiceDTO;
-import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.UpdateTemplateWithFieldsRequestDTO;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.*;
 import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementService;
 import com.ABIC.CustomerRequest.util.PaginatedResponse;
 import com.ABIC.CustomerRequest.util.Response;
@@ -73,26 +71,29 @@ public class ServiceManagementController {
 
 
     @GetMapping("/all")
-    public ResponseEntity<Response<PaginatedResponse<Services>>> getAllServices(
+    public ResponseEntity<Response<PaginatedResponse<ServiceResponseDTO>>> getAllServices(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<Services> servicesPage = serviceManagementService.getAllServices(pageable);
+        Page<ServiceResponseDTO> dtoPage = serviceManagementService.getAllServiceDTOs(pageable);
 
-        PaginatedResponse<Services> responseData = new PaginatedResponse<>(servicesPage);
+        PaginatedResponse<ServiceResponseDTO> responseData = new PaginatedResponse<>(dtoPage);
 
-        Response<PaginatedResponse<Services>> response = ResponseUtils.success(HttpStatus.OK.value(), responseData);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ResponseUtils.success(HttpStatus.OK.value(), responseData));
     }
+
+
 
 
     @GetMapping("/lookups")
     public ResponseEntity<Response<Map<String, List<?>>>> getLookups() {
         List<ServiceStatus> statuses = serviceManagementService.getAllServiceStatuses();
         List<ServiceType> types = serviceManagementService.getAllServiceTypes();
+        List<ControlTypeLookup> controlTypes = serviceManagementService.getControlTypes().orElse(Collections.emptyList());
 
         Map<String, List<?>> data = Map.of(
+                "controlTypes", controlTypes,
                 "statuses", statuses,
                 "types", types
         );
@@ -128,6 +129,20 @@ public class ServiceManagementController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         }
     }
+
+    @GetMapping("/requests/{requestNumber}")
+    public ResponseEntity<Response<RequestDetailsDTO>> getRequestByNumber(@PathVariable String requestNumber) {
+        return serviceManagementService.getRequestDetails(requestNumber)
+                .map(details -> {
+                    Response<RequestDetailsDTO> response = ResponseUtils.<RequestDetailsDTO>success(HttpStatus.OK.value(), details);
+                    return ResponseEntity.ok(response);
+                })
+                .orElseGet(() -> {
+                    Response<RequestDetailsDTO> errorResponse = ResponseUtils.<RequestDetailsDTO>error(HttpStatus.NOT_FOUND.value(), null);
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+                });
+    }
+
 
     @GetMapping("/all-requests")
     public ResponseEntity<Response<PaginatedResponse<Request>>> getAllRequests(
