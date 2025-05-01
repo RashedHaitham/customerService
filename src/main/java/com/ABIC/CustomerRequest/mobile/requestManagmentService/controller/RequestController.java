@@ -9,6 +9,7 @@ import com.ABIC.CustomerRequest.util.ResponseUtils;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.ServiceType;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.Services;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.TemplateField;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.TemplateFieldDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.TemplateSubmissionDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementService;
 import org.slf4j.Logger;
@@ -140,9 +141,9 @@ public class RequestController {
     }
 
     @GetMapping("/templates/{groupId}")
-    public ResponseEntity<Response<List<TemplateField>>> getTemplateFieldsByGroupId(@PathVariable Long groupId) {
-        List<TemplateField> templates = serviceManagementService.getTemplateFieldsByGroupId(groupId);
-        Response<List<TemplateField>> response = ResponseUtils.success(HttpStatus.OK.value(), templates);
+    public ResponseEntity<Response<List<TemplateFieldDTO>>> getTemplateFieldsByGroupId(@PathVariable String groupId) {
+        List<TemplateFieldDTO> templates = serviceManagementService.getTemplateFieldsByGroupId(groupId);
+        Response<List<TemplateFieldDTO>> response = ResponseUtils.success(HttpStatus.OK.value(), templates);
         return ResponseEntity.ok(response);
     }
 

@@ -1,7 +1,6 @@
 package com.ABIC.CustomerRequest.web.serviceManagment.model.dto;
 
 
-import com.ABIC.CustomerRequest.web.serviceManagment.model.TemplateField;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,5 +16,5 @@ public class CreateTemplateWithFieldsRequestDTO {
     private String englishDescription;
     private String arabicDescription;
 
-    private List<TemplateField> fields;
+    private List<TemplateFieldDTO> fields;
 }

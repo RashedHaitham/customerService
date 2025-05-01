@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface TemplateRepository extends JpaRepository<Template,Long> {
 
-    Optional<Template> findByGroupId(Long groupId);
+    Optional<Template> findByGroupId(String groupId);
 
     List<Template> findAllByHiddenIsFalse();
 }

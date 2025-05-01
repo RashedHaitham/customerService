@@ -26,7 +26,7 @@ public class Template {
     private String ArabicDescription;
 
     @Column(name = "group_id", nullable = false, unique = true)
-    private Long groupId;
+    private String groupId;
 
     @Column(name = "hidden", nullable = false)
     private boolean hidden = false;
