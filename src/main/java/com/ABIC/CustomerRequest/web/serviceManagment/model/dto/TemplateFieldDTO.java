@@ -1,5 +1,6 @@
 package com.ABIC.CustomerRequest.web.serviceManagment.model.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,15 +13,17 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Valid
 public class TemplateFieldDTO {
+    private Long id;
 
-    @NotBlank
+    @NotBlank(message = "English label is required")
     private String labelEn;
 
-    @NotBlank
+    @NotBlank(message = "Arabic label is required")
     private String labelAr;
 
-    @NotNull
+    @NotBlank(message = "Control type is required")
     private String controlType;
 
     private boolean required;

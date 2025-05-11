@@ -24,7 +24,6 @@ public class ServiceManagementService {
     private final ServiceRepository serviceRepository;
 
     private final RequestRepository requestRepository;
-
     private final ServiceTypeRepository serviceTypeRepository;
 
     private final ServiceStatusRepository serviceStatusRepository;
@@ -112,6 +111,7 @@ public class ServiceManagementService {
         }
     }
 
+
     public Page<Services> getAllServices(Pageable pageable) {
         return serviceRepository.findAll(pageable);
     }
@@ -176,6 +176,7 @@ public class ServiceManagementService {
         }
     }
 
+
     public Page<TemplateFieldValue> getSubmissionsByCustomerNumber(String customerNumber, Pageable pageable) {
         return templateFieldValueRepository.getAllByCustomerNumber(customerNumber, pageable);
     }
@@ -231,6 +232,8 @@ public class ServiceManagementService {
         });
     }
 
+
+
     @Transactional
     public boolean updateTemplate(String groupId, UpdateTemplateWithFieldsRequestDTO request) {
         Optional<Template> optionalTemplate = templateRepository.findByGroupId(groupId);
@@ -285,6 +288,7 @@ public class ServiceManagementService {
 
         templateFieldRepository.save(existingField);
     }
+
 
     private TemplateField createNewField(TemplateFieldDTO dto, String groupId) {
         ControlTypeLookup controlType = controlTypeLookupRepository.findByCode(dto.getControlType())
@@ -352,6 +356,7 @@ public class ServiceManagementService {
             return ResponseUtils.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed to create template: " + e.getMessage());
         }
     }
+
 
     public Optional<List<ControlTypeLookup>> getControlTypes() {
         try {

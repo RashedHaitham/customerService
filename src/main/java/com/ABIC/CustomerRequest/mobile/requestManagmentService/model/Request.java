@@ -18,15 +18,6 @@ public class Request {
     private String requestNumber;
 
     @Column(nullable = false, updatable = false, unique = true)
-    @JsonIgnore
-    private Long sequenceId;
-
-    @PrePersist
-    public void generateId() {
-        if (this.requestNumber == null) {  // Ensure only new records generate an ID
-            this.requestNumber = "REQ-" + String.format("%06d", this.sequenceId);
-        }
-    }
 
     private String description;
     private String requestedBy;

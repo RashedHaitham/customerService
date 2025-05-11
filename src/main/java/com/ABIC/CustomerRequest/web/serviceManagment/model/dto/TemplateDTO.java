@@ -1,7 +1,5 @@
 package com.ABIC.CustomerRequest.web.serviceManagment.model.dto;
 
-
-import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,11 +9,10 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateTemplateWithFieldsRequestDTO {
+public class TemplateDTO {
     private String englishName;
     private String arabicName;
     private String englishDescription;
     private String arabicDescription;
-    @Valid
-    private List<@Valid TemplateFieldDTO> fields;
+    private List<TemplateFieldDTO> fields;
 }

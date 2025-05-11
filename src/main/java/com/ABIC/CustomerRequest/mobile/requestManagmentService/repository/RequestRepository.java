@@ -19,7 +19,4 @@ public interface RequestRepository extends JpaRepository<Request, String> {
     Page<Request> findByStatus(Request.Status status, Pageable pageable);
 
     Page<Request> findRequestByCustomerNumber(String requestNumber, Pageable pageable);
-
-    @Query(value = "SELECT COALESCE(MAX(sequence_id), 99999) + 1 FROM requests", nativeQuery = true)
-    Long getNextSequenceId();
 }

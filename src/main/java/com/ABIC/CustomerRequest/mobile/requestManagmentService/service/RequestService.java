@@ -1,5 +1,6 @@
 package com.ABIC.CustomerRequest.mobile.requestManagmentService.service;
 
+import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.ValidateRequest;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.AddRequestDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.Request;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.RequestStatusSummary;
@@ -17,19 +18,21 @@ import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementSe
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class RequestService {
@@ -72,12 +75,10 @@ public class RequestService {
 
     public Request saveRequest(AddRequestDTO requestDTO, String sessionId, String channelId, String clientVersion) {
 
-        Long nextSequence = requestRepository.getNextSequenceId();
-        String requestNumber = "REQ-" + String.format("%06d", nextSequence);
+        String requestNumber = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
 
         Request savedRequest = new Request();
         savedRequest.setRequestNumber(requestNumber);
-        savedRequest.setSequenceId(nextSequence);
 
         savedRequest.setRequestedBy(requestDTO.getRequestedBy());
         savedRequest.setCustomerNumber(requestDTO.getCustomerNumber());
@@ -154,12 +155,12 @@ public class RequestService {
         return requestRepository.save(request);
     }
 
-//    public String getServiceDetails(int id) {
-//        ServiceType serviceType = serviceTypeRepository.findById((long) id)
-//                .orElseThrow(() -> new RuntimeException("ServiceType not found with ID: " + id));
-//
-//        return serviceType.getDetailsEn() != null ? serviceType.getDetailsEn() : "No details available";
-//    }
+    public String getServiceDetails(int id) {
+        ServiceType serviceType = serviceTypeRepository.findById((long) id)
+                .orElseThrow(() -> new RuntimeException("ServiceType not found with ID: " + id));
+
+        return serviceType.getDetailsEn() != null ? serviceType.getDetailsEn() : "No details available";
+    }
 
     private String extractTokenFromCookie(String cookieName) {
         Cookie[] cookies = httpServletRequest.getCookies();
