@@ -16,10 +16,10 @@ public class RequestDetailsDTO {
     private String requestedBy;
     private String customerNumber;
     private String statusUpdatedBy;
-    private String serviceType;
+    private long serviceId;
     private String status;
     private LocalDateTime time;
-    private String slaTime;
+    private int slaTime;
     private String comment;
     private List<FieldValueDTO> fields;
 }

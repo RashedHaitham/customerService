@@ -4,14 +4,12 @@ import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.*;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.UpdateRequestDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.service.RequestService;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.*;
-import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.CreateTemplateWithFieldsRequestDTO;
-import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.ServiceDTO;
-import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.ServiceResponseDTO;
-import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.UpdateTemplateWithFieldsRequestDTO;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.*;
 import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementService;
 import com.ABIC.CustomerRequest.util.PaginatedResponse;
 import com.ABIC.CustomerRequest.util.Response;
 import com.ABIC.CustomerRequest.util.ResponseUtils;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -134,17 +132,18 @@ public class ServiceManagementController {
     }
 
     @GetMapping("/requests/{requestNumber}")
-    public ResponseEntity<Response<Request>> getRequestByNumber(@PathVariable String requestNumber) {
-        return requestService.getRequestByNumber(requestNumber)
-                .map(request -> {
-                    Response<Request> response = ResponseUtils.success(HttpStatus.OK.value(), request);
+    public ResponseEntity<Response<RequestDetailsDTO>> getRequestByNumber(@PathVariable String requestNumber) {
+        return serviceManagementService.getRequestDetails(requestNumber)
+                .map(details -> {
+                    Response<RequestDetailsDTO> response = ResponseUtils.<RequestDetailsDTO>success(HttpStatus.OK.value(), details);
                     return ResponseEntity.ok(response);
                 })
                 .orElseGet(() -> {
-                    Response<Request> errorResponse = ResponseUtils.error(HttpStatus.NOT_FOUND.value(), null);
+                    Response<RequestDetailsDTO> errorResponse = ResponseUtils.<RequestDetailsDTO>error(HttpStatus.NOT_FOUND.value(), null);
                     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
                 });
     }
+
 
     @GetMapping("/all-requests")
     public ResponseEntity<Response<PaginatedResponse<Request>>> getAllRequests(
@@ -218,9 +217,9 @@ public class ServiceManagementController {
     }
 
     @PostMapping("/templateWithFields")
-    public ResponseEntity<Response<String>> createTemplateWithFields(@RequestBody CreateTemplateWithFieldsRequestDTO request) {
+    public ResponseEntity<Response<String>> createTemplateWithFields(@Valid @RequestBody CreateTemplateWithFieldsRequestDTO request) {
         Response<String> response = serviceManagementService.createTemplateWithFields(request);
-
+        System.out.println(response);
         if (response.getStatusCode() == HttpStatus.CREATED.value()) {
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } else {
@@ -230,14 +229,14 @@ public class ServiceManagementController {
 
 
     @DeleteMapping("/template/{templateGroupId}")
-    public ResponseEntity<Response<String>> deleteTemplate(@PathVariable Long templateGroupId) {
+    public ResponseEntity<Response<String>> deleteTemplate(@PathVariable String templateGroupId) {
         serviceManagementService.deleteTemplate(templateGroupId);
         Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template deleted successfully");
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/template/{groupId}")
-    public ResponseEntity<Response<String>> updateTemplate(@PathVariable Long groupId, @RequestBody UpdateTemplateWithFieldsRequestDTO request) {
+    public ResponseEntity<Response<String>> updateTemplate(@PathVariable String groupId, @RequestBody UpdateTemplateWithFieldsRequestDTO request) {
         boolean updated = serviceManagementService.updateTemplate(groupId, request);
 
         if (!updated) {
@@ -257,7 +256,7 @@ public class ServiceManagementController {
     }
 
     @PatchMapping("/template/restore/{groupId}")
-    public ResponseEntity<Response<String>> restoreTemplate(@PathVariable Long groupId) {
+    public ResponseEntity<Response<String>> restoreTemplate(@PathVariable String groupId) {
         serviceManagementService.restoreTemplate(groupId);
         Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template activated successfully");
         return ResponseEntity.ok(response);

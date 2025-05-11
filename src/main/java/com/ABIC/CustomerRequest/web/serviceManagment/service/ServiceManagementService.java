@@ -15,10 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +24,7 @@ public class ServiceManagementService {
     private final ServiceRepository serviceRepository;
 
     private final RequestRepository requestRepository;
+
     private final ServiceTypeRepository serviceTypeRepository;
 
     private final ServiceStatusRepository serviceStatusRepository;
@@ -114,7 +112,6 @@ public class ServiceManagementService {
         }
     }
 
-
     public Page<Services> getAllServices(Pageable pageable) {
         return serviceRepository.findAll(pageable);
     }
@@ -152,9 +149,27 @@ public class ServiceManagementService {
         }
     }
 
-    public List<TemplateField> getTemplateFieldsByGroupId(Long groupId) {
+    public List<TemplateFieldDTO> getTemplateFieldsByGroupId(String groupId) {
         try {
-            return templateFieldRepository.findByGroupIdAndHiddenIsFalse(groupId);
+            List<TemplateField> fields = templateFieldRepository.findByGroupIdAndHiddenIsFalse(groupId);
+
+            return fields.stream()
+                    .map(field -> new TemplateFieldDTO(
+                            null,
+                            field.getLabelEn(),
+                            field.getLabelAr(),
+                            field.getControlType().getCode(),
+                            field.isRequired(),
+                            field.isAttachment(),
+                            field.getSorting(),
+                            field.getPlaceholderEn(),
+                            field.getPlaceholderAr(),
+                            convertStringToList(field.getExtraDataEn()),
+                            convertStringToList(field.getExtraDataAr())
+                    ))
+                    .collect(Collectors.toList());
+
+
         } catch (Exception e) {
             System.err.println("Error fetching template fields by group ID: " + e.getMessage());
             return List.of();
@@ -167,8 +182,7 @@ public class ServiceManagementService {
 
     public Optional<List<TemplateField>> getAllTemplateFields(String groupId) {
         try {
-            Long parsedGroupId = Long.parseLong(groupId);
-            List<TemplateField> fields = templateFieldRepository.findByGroupIdAndHiddenIsFalse(parsedGroupId);
+            List<TemplateField> fields = templateFieldRepository.findByGroupIdAndHiddenIsFalse(groupId);
             return Optional.ofNullable(fields);
         } catch (Exception e) {
             System.err.println("Error fetching template: " + e.getMessage());
@@ -176,15 +190,15 @@ public class ServiceManagementService {
         }
     }
 
-    public void deleteTemplate(Long templateGroupId) {
+    public void deleteTemplate(String templateGroupId) {
         triggerTemplate(templateGroupId,true);
     }
 
-    public void restoreTemplate(Long templateGroupId) {
+    public void restoreTemplate(String templateGroupId) {
         triggerTemplate(templateGroupId,false);
     }
 
-    private void triggerTemplate(Long templateGroupId, boolean hidden) {
+    private void triggerTemplate(String templateGroupId, boolean hidden) {
         Template template = templateRepository.findByGroupId(templateGroupId)
                 .orElseThrow(() -> new EntityNotFoundException("Template not found with groupId: " + templateGroupId));
 
@@ -217,10 +231,8 @@ public class ServiceManagementService {
         });
     }
 
-
-
     @Transactional
-    public boolean updateTemplate(Long groupId, UpdateTemplateWithFieldsRequestDTO request) {
+    public boolean updateTemplate(String groupId, UpdateTemplateWithFieldsRequestDTO request) {
         Optional<Template> optionalTemplate = templateRepository.findByGroupId(groupId);
 
         if (optionalTemplate.isEmpty()) {
@@ -233,14 +245,24 @@ public class ServiceManagementService {
         Map<Long, TemplateField> existingFieldMap = templateFieldRepository.findByGroupId(groupId).stream()
                 .collect(Collectors.toMap(TemplateField::getId, field -> field));
 
-        for (TemplateField incomingField : request.getFields()) {
+        Set<Long> incomingIds = new HashSet<>();
+
+        for (TemplateFieldDTO incomingField : request.getFields()) {
+            //update existing field
             if (incomingField.getId() != null && existingFieldMap.containsKey(incomingField.getId())) {
                 updateExistingField(existingFieldMap.get(incomingField.getId()), incomingField);
-            } else {
+                incomingIds.add(incomingField.getId());
+            }
+            //create new field
+            else {
                 TemplateField newField = createNewField(incomingField, groupId);
                 templateFieldRepository.save(newField);
             }
         }
+
+        existingFieldMap.keySet().stream()
+                .filter(existingId -> !incomingIds.contains(existingId))
+                .forEach(this::deleteTemplateField);
 
         return true;
     }
@@ -253,37 +275,44 @@ public class ServiceManagementService {
         return template;
     }
 
-    private void updateExistingField(TemplateField existingField, TemplateField incomingField) {
-        existingField.setLabelEn(incomingField.getLabelEn());
-        existingField.setLabelAr(incomingField.getLabelAr());
-        existingField.setControlType(incomingField.getControlType());
-        existingField.setRequired(incomingField.isRequired());
-        existingField.setAttachment(incomingField.isAttachment());
-        existingField.setSorting(incomingField.getSorting());
-        existingField.setPlaceholderEn(incomingField.getPlaceholderEn());
-        existingField.setPlaceholderAr(incomingField.getPlaceholderAr());
-        existingField.setExtraDataEn(incomingField.getExtraDataEn());
-        existingField.setExtraDataAr(incomingField.getExtraDataAr());
+    private void updateExistingField(TemplateField existingField, TemplateFieldDTO dto) {
+        ControlTypeLookup controlType = controlTypeLookupRepository.findByCode(dto.getControlType())
+                .orElseThrow(() -> new RuntimeException("Invalid control type: " + dto.getControlType()));
+
+        existingField.setLabelEn(dto.getLabelEn());
+        existingField.setLabelAr(dto.getLabelAr());
+        existingField.setControlType(controlType);
+        existingField.setRequired(dto.isRequired());
+        existingField.setAttachment(dto.isAttachment());
+        existingField.setSorting(dto.getSorting());
+        existingField.setPlaceholderEn(dto.getPlaceholderEn());
+        existingField.setPlaceholderAr(dto.getPlaceholderAr());
+        existingField.setExtraDataEn(convertListToString(dto.getExtraDataEn()));
+        existingField.setExtraDataAr(convertListToString(dto.getExtraDataAr()));
 
         templateFieldRepository.save(existingField);
     }
 
-    private TemplateField createNewField(TemplateField incomingField, Long groupId) {
+    private TemplateField createNewField(TemplateFieldDTO dto, String groupId) {
+        ControlTypeLookup controlType = controlTypeLookupRepository.findByCode(dto.getControlType())
+                .orElseThrow(() -> new RuntimeException("Invalid control type: " + dto.getControlType()));
+
         TemplateField newField = new TemplateField();
-        newField.setLabelEn(incomingField.getLabelEn());
-        newField.setLabelAr(incomingField.getLabelAr());
-        newField.setControlType(incomingField.getControlType());
-        newField.setRequired(incomingField.isRequired());
-        newField.setAttachment(incomingField.isAttachment());
-        newField.setSorting(incomingField.getSorting());
-        newField.setPlaceholderEn(incomingField.getPlaceholderEn());
-        newField.setPlaceholderAr(incomingField.getPlaceholderAr());
-        newField.setExtraDataEn(incomingField.getExtraDataEn());
-        newField.setExtraDataAr(incomingField.getExtraDataAr());
+        newField.setLabelEn(dto.getLabelEn());
+        newField.setLabelAr(dto.getLabelAr());
+        newField.setControlType(controlType);
+        newField.setRequired(dto.isRequired());
+        newField.setAttachment(dto.isAttachment());
+        newField.setSorting(dto.getSorting());
+        newField.setPlaceholderEn(dto.getPlaceholderEn());
+        newField.setPlaceholderAr(dto.getPlaceholderAr());
+        newField.setExtraDataEn(convertListToString(dto.getExtraDataEn()));
+        newField.setExtraDataAr(convertListToString(dto.getExtraDataAr()));
         newField.setGroupId(groupId);
         return newField;
     }
 
+    @Transactional
     public Response<String> createTemplateWithFields(CreateTemplateWithFieldsRequestDTO request) {
         try {
             // Save the template
@@ -292,30 +321,44 @@ public class ServiceManagementService {
             template.setArabicName(request.getArabicName());
             template.setEnglishDescription(request.getEnglishDescription());
             template.setArabicDescription(request.getArabicDescription());
-            template.setGroupId(UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE);
+            template.setGroupId(UUID.randomUUID().toString());
 
             Template savedTemplate = templateRepository.save(template);
 
-            for (TemplateField field : request.getFields()) {
-                String controlTypeCode = field.getControlType().getCode();
+            for (TemplateFieldDTO dto : request.getFields()) {
 
-                ControlTypeLookup controlType = (ControlTypeLookup) controlTypeLookupRepository.findByCode(controlTypeCode)
+                String controlTypeCode = dto.getControlType();
+                if (controlTypeCode == null || controlTypeCode.isBlank()) {
+                    throw new RuntimeException("ControlType code is required for all fields.");
+                }
+
+                ControlTypeLookup controlType = controlTypeLookupRepository.findByCode(controlTypeCode)
                         .orElseThrow(() -> new RuntimeException("ControlType with code [" + controlTypeCode + "] not found"));
 
+                TemplateField field = new TemplateField();
+                field.setLabelEn(dto.getLabelEn());
+                field.setLabelAr(dto.getLabelAr());
                 field.setControlType(controlType);
+                field.setRequired(dto.isRequired());
+                field.setAttachment(dto.isAttachment());
+                field.setSorting(dto.getSorting());
+                field.setPlaceholderEn(dto.getPlaceholderEn());
+                field.setPlaceholderAr(dto.getPlaceholderAr());
                 field.setGroupId(savedTemplate.getGroupId());
+                field.setHidden(false);
+
+                field.setExtraDataEn(dto.getExtraDataEn() != null ? String.join(",", dto.getExtraDataEn()) : null);
+                field.setExtraDataAr(dto.getExtraDataAr() != null ? String.join(",", dto.getExtraDataAr()) : null);
 
                 templateFieldRepository.save(field);
             }
 
-
-            return ResponseUtils.success(HttpStatus.CREATED.value(), "Template and fields created successfully");
+            return ResponseUtils.success(HttpStatus.CREATED.value(), "Template and fields created successfully with group id "+savedTemplate.getGroupId());
 
         } catch (Exception e) {
             return ResponseUtils.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed to create template: " + e.getMessage());
         }
     }
-
 
     public Optional<List<ControlTypeLookup>> getControlTypes() {
         try {
@@ -368,8 +411,20 @@ public class ServiceManagementService {
                             .findByCustomerNumber( request.getCustomerNumber());
 
                     List<FieldValueDTO> fields = fieldValues.stream()
-                            .map(fv -> new FieldValueDTO(fv.getField().getId(),fv.getField().getLabelAr() ,fv.getField().getLabelEn(), fv.getValue()))
-                            .toList();
+                            .map(fv -> {
+                                TemplateField field = fv.getField();
+                                return new FieldValueDTO(
+                                        field.getId(),
+                                        field.getLabelAr(),
+                                        field.getLabelEn(),
+                                        fv.getValue(),
+                                        convertStringToList(field.getExtraDataEn()),
+                                        convertStringToList(field.getExtraDataAr())
+                                );
+                            })
+                            .collect(Collectors.toList());
+
+
 
                     return new RequestDetailsDTO(
                             request.getRequestNumber(),
@@ -377,7 +432,7 @@ public class ServiceManagementService {
                             request.getRequestedBy(),
                             request.getCustomerNumber(),
                             request.getStatusUpdatedBy(),
-                            request.getServiceType(),
+                            request.getService().getId(),
                             request.getStatus().name(),
                             request.getTime(),
                             request.getSlaTime(),
@@ -387,7 +442,15 @@ public class ServiceManagementService {
                 });
     }
 
+    private List<String> convertStringToList(String value) {
+        if (value == null || value.isBlank()) return Collections.emptyList();
+        return Arrays.stream(value.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+    }
 
-
-
+    private String convertListToString(List<String> list) {
+        return (list == null || list.isEmpty()) ? null : String.join(",", list);
+    }
 }

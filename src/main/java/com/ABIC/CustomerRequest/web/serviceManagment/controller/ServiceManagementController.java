@@ -9,6 +9,7 @@ import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementSe
 import com.ABIC.CustomerRequest.util.PaginatedResponse;
 import com.ABIC.CustomerRequest.util.Response;
 import com.ABIC.CustomerRequest.util.ResponseUtils;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -216,7 +217,7 @@ public class ServiceManagementController {
     }
 
     @PostMapping("/templateWithFields")
-    public ResponseEntity<Response<String>> createTemplateWithFields(@RequestBody CreateTemplateWithFieldsRequestDTO request) {
+    public ResponseEntity<Response<String>> createTemplateWithFields(@Valid @RequestBody CreateTemplateWithFieldsRequestDTO request) {
         Response<String> response = serviceManagementService.createTemplateWithFields(request);
 
         if (response.getStatusCode() == HttpStatus.CREATED.value()) {
@@ -228,14 +229,14 @@ public class ServiceManagementController {
 
 
     @DeleteMapping("/template/{templateGroupId}")
-    public ResponseEntity<Response<String>> deleteTemplate(@PathVariable Long templateGroupId) {
+    public ResponseEntity<Response<String>> deleteTemplate(@PathVariable String templateGroupId) {
         serviceManagementService.deleteTemplate(templateGroupId);
         Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template deleted successfully");
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/template/{groupId}")
-    public ResponseEntity<Response<String>> updateTemplate(@PathVariable Long groupId, @RequestBody UpdateTemplateWithFieldsRequestDTO request) {
+    public ResponseEntity<Response<String>> updateTemplate(@PathVariable String groupId, @RequestBody UpdateTemplateWithFieldsRequestDTO request) {
         boolean updated = serviceManagementService.updateTemplate(groupId, request);
 
         if (!updated) {
@@ -255,7 +256,7 @@ public class ServiceManagementController {
     }
 
     @PatchMapping("/template/restore/{groupId}")
-    public ResponseEntity<Response<String>> restoreTemplate(@PathVariable Long groupId) {
+    public ResponseEntity<Response<String>> restoreTemplate(@PathVariable String groupId) {
         serviceManagementService.restoreTemplate(groupId);
         Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template activated successfully");
         return ResponseEntity.ok(response);

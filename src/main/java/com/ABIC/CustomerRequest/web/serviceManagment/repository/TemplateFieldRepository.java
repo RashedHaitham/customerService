@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @Repository
 public interface TemplateFieldRepository extends JpaRepository<TemplateField, Long> {
-    List<TemplateField> findByGroupId(Long groupId);
-    List<TemplateField> findByGroupIdAndHiddenIsFalse(Long groupId);
+    List<TemplateField> findByGroupId(String groupId);
+    List<TemplateField> findByGroupIdAndHiddenIsFalse(String groupId);
 
 }

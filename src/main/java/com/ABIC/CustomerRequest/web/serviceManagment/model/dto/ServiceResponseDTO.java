@@ -16,7 +16,7 @@ public class ServiceResponseDTO {
     private String arabicDescription;
 
     private Long templateId;
-    private Long groupId;
+    private String groupId;
     private String templateNameEn;
     private String templateNameAr;
 

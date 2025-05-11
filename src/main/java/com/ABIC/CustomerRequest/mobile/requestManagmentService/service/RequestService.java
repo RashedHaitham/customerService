@@ -1,15 +1,18 @@
 package com.ABIC.CustomerRequest.mobile.requestManagmentService.service;
 
+import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.ValidateRequest;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.AddRequestDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.Request;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.RequestStatusSummary;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.UpdateRequestDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.repository.RequestRepository;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.ServiceType;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.Services;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.TemplateField;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.TemplateFieldValue;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.FieldValueDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.TemplateSubmissionDTO;
+import com.ABIC.CustomerRequest.web.serviceManagment.repository.ServiceRepository;
 import com.ABIC.CustomerRequest.web.serviceManagment.repository.ServiceTypeRepository;
 import com.ABIC.CustomerRequest.util.JWTUtil;
 import com.ABIC.CustomerRequest.web.serviceManagment.repository.TemplateFieldValueRepository;
@@ -17,19 +20,21 @@ import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementSe
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class RequestService {
@@ -40,13 +45,16 @@ public class RequestService {
     private static final Logger logger = LoggerFactory.getLogger(RequestService.class);
     private final ServiceManagementService serviceManagementService;
     private final TemplateFieldValueRepository templateFieldValueRepository;
-    public RequestService(RequestRepository requestRepository, JWTUtil jwtUtil, HttpServletRequest httpServletRequest, ServiceTypeRepository serviceTypeRepository, ServiceManagementService serviceManagementService, TemplateFieldValueRepository templateFieldValueRepository) {
+    private final ServiceRepository serviceRepository;
+
+    public RequestService(RequestRepository requestRepository, JWTUtil jwtUtil, HttpServletRequest httpServletRequest, ServiceTypeRepository serviceTypeRepository, ServiceManagementService serviceManagementService, TemplateFieldValueRepository templateFieldValueRepository, ServiceRepository serviceRepository) {
         this.requestRepository = requestRepository;
         this.jwtUtil = jwtUtil;
         this.httpServletRequest = httpServletRequest;
         this.serviceTypeRepository = serviceTypeRepository;
         this.serviceManagementService = serviceManagementService;
         this.templateFieldValueRepository = templateFieldValueRepository;
+        this.serviceRepository = serviceRepository;
     }
 
     public Page<Request> getAllRequests(Pageable pageable) {
@@ -54,7 +62,7 @@ public class RequestService {
     }
 
     public Page<Request> getAllRequests(String customerNumber, Pageable pageable) {
-        return requestRepository.findRequestByCustomerNumber(customerNumber, pageable);
+        return requestRepository.findRequestByUserId(customerNumber, pageable);
     }
 
     public Page<Request> getRequestsByStatus(Request.Status status, Pageable pageable) {
@@ -62,7 +70,7 @@ public class RequestService {
     }
 
     public Page<Request> findByStatusAndCustomerNumber(Request.Status status,String customerNumber ,Pageable pageable){
-        return requestRepository.findByStatusAndCustomerNumber(status,customerNumber,pageable);
+        return requestRepository.findByStatusAndUserId(status,customerNumber,pageable);
     }
 
 
@@ -71,26 +79,29 @@ public class RequestService {
     }
 
     public Request saveRequest(AddRequestDTO requestDTO, String sessionId, String channelId, String clientVersion) {
+        String requestNumber = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
 
-        Long nextSequence = requestRepository.getNextSequenceId();
-        String requestNumber = "REQ-" + String.format("%06d", nextSequence);
+        Services service = serviceRepository.findById(requestDTO.getServiceId())
+                .orElseThrow(() -> new RuntimeException("Service not found with ID: " + requestDTO.getServiceId()));
 
         Request savedRequest = new Request();
         savedRequest.setRequestNumber(requestNumber);
-        savedRequest.setSequenceId(nextSequence);
-
         savedRequest.setRequestedBy(requestDTO.getRequestedBy());
-        savedRequest.setCustomerNumber(requestDTO.getCustomerNumber());
+        savedRequest.setUserId(requestDTO.getUserId());
         savedRequest.setDescription(requestDTO.getDescription());
         savedRequest.setTime(LocalDateTime.now());
-        savedRequest.setServiceType(requestDTO.getServiceType());
+        savedRequest.setService(service);
         savedRequest.setStatus(Request.Status.PENDING);
+
+        savedRequest.setSlaTime(service.getSlaTime());
 
         savedRequest.setChannelId(channelId);
         savedRequest.setClientVersion(clientVersion);
         savedRequest.setSessionId(sessionId);
+
         return requestRepository.save(savedRequest);
     }
+
 
     public Request updateRequestStatus(String requestNumber, Request.Status status,String comment) {
         Request request = requestRepository.findByRequestNumber(requestNumber);
@@ -138,28 +149,32 @@ public class RequestService {
         if (request == null) {
             throw new RuntimeException("Request not found with number: " + requestNumber);
         }
-        Optional.ofNullable(requestDTO.getCustomerNumber()).filter(desc -> !desc.isEmpty()).ifPresent(request::setCustomerNumber);
+        Optional.ofNullable(requestDTO.getCustomerNumber()).filter(desc -> !desc.isEmpty()).ifPresent(request::setUserId);
         Optional.ofNullable(requestDTO.getDescription()).filter(desc -> !desc.isEmpty()).ifPresent(request::setDescription);
         Optional.ofNullable(requestDTO.getRequestedBy()).filter(reqBy -> !reqBy.isEmpty()).ifPresent(request::setRequestedBy);
         Optional.ofNullable(requestDTO.getStatusUpdatedBy()).filter(statusBy -> !statusBy.isEmpty()).ifPresent(request::setStatusUpdatedBy);
         Optional.ofNullable(requestDTO.getStatus())
                 .filter(status -> !status.isEmpty())
                 .ifPresent(status -> request.setStatus(Request.Status.valueOf(status)));
-        Optional.ofNullable(requestDTO.getServiceType())
-                .filter(service -> !service.isEmpty())
-                .ifPresent(service -> request.setServiceType(requestDTO.getServiceType()));
 
-        Optional.ofNullable(requestDTO.getSlaTime()).ifPresent(request::setSlaTime);
+        Optional.ofNullable(requestDTO.getServiceId())
+                .ifPresent(serviceId -> {
+                    Services service = serviceRepository.findById(serviceId)
+                            .orElseThrow(() -> new RuntimeException("Service not found with ID: " + serviceId));
+                    request.setService(service);
+                    request.setSlaTime(service.getSlaTime());
+                });
+
 
         return requestRepository.save(request);
     }
 
-//    public String getServiceDetails(int id) {
-//        ServiceType serviceType = serviceTypeRepository.findById((long) id)
-//                .orElseThrow(() -> new RuntimeException("ServiceType not found with ID: " + id));
-//
-//        return serviceType.getDetailsEn() != null ? serviceType.getDetailsEn() : "No details available";
-//    }
+    public String getServiceDetails(int id) {
+        ServiceType serviceType = serviceTypeRepository.findById((long) id)
+                .orElseThrow(() -> new RuntimeException("ServiceType not found with ID: " + id));
+
+        return serviceType.getDetailsEn() != null ? serviceType.getDetailsEn() : "No details available";
+    }
 
     private String extractTokenFromCookie(String cookieName) {
         Cookie[] cookies = httpServletRequest.getCookies();
@@ -199,40 +214,45 @@ public class RequestService {
     }
 
 
-//    public boolean validateSession(ValidateRequest validateRequest) {
-//        String validationUrl = "http://10.38.2.15:8091/MubasherRESTAPI/api/RestSOA/validateSession";
-//
-//        try {
-//            RestTemplate restTemplate = new RestTemplate();
-//            HttpHeaders headers = new HttpHeaders();
-//            headers.setContentType(MediaType.APPLICATION_JSON);
-//
-//            Map<String, Object> requestBody = new HashMap<>();
-//            requestBody.put("HED", Map.of(
-//                    "sessionId", validateRequest.getSessionId(),
-//                    "clientVersion", validateRequest.getClientVersion(),
-//                    "serviceId", validateRequest.getServiceId(),
-//                    "userId", validateRequest.getUserId(),
-//                    "channelId", validateRequest.getChannelId()
-//            ));
-//            requestBody.put("DAT", new HashMap<>());
-//
-//            HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
-//
-//            ResponseEntity<Map> responseEntity = restTemplate.postForEntity(validationUrl, requestEntity, Map.class);
-//
-//            Map<String, Object> responseBody = responseEntity.getBody();
-//            if (responseBody != null && responseBody.containsKey("status")) {
-//                int status = (int) responseBody.get("status");
-//                return status == 1;
-//            }
-//
-//        } catch (Exception e) {
-//            logger.error("Session validation failed: {}", e.getMessage());
-//        }
-//
-//        return false;
-//    }
+    public boolean validateSession(ValidateRequest validateRequest) {
+        String validationUrl = "http://10.38.2.17:8080/MubasherRESTAPI/api/RestSOA/validateSession";
+
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("HED", Map.of(
+                    "sessionId", validateRequest.getSessionId(),
+                    "clientVersion", validateRequest.getClientVersion(),
+                    "serviceId", validateRequest.getServiceId(),
+                    "userId", validateRequest.getUserId(),
+                    "channelId", validateRequest.getChannelId()
+            ));
+            requestBody.put("DAT", new HashMap<>());
+
+            HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
+
+            ResponseEntity<Map> responseEntity = restTemplate.postForEntity(validationUrl, requestEntity, Map.class);
+
+            Map<String, Object> responseBody = responseEntity.getBody();
+
+            if (responseBody != null && responseBody.containsKey("DAT")) {
+                Map<String, Object> dat = (Map<String, Object>) responseBody.get("DAT");
+                if (dat != null && dat.containsKey("status")) {
+                    int status = (int) dat.get("status");
+                    return status == 1;
+                }
+            }
+
+
+        } catch (Exception e) {
+            logger.error("Session validation failed: {}", e.getMessage());
+        }
+
+        return false;
+    }
 
 
 }

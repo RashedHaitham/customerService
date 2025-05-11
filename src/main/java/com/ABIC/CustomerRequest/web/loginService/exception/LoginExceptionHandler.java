@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @ControllerAdvice
 @Hidden
-public class GlobalExceptionHandler {
+public class LoginExceptionHandler  {
 
     @ExceptionHandler(NameNotFoundException.class)
     public ResponseEntity<Response<String>> handleNameNotFoundException(NameNotFoundException ex) {

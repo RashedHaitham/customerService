@@ -1,5 +1,6 @@
 package com.ABIC.CustomerRequest.mobile.requestManagmentService.model;
 
+import com.ABIC.CustomerRequest.web.serviceManagment.model.Services;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -18,21 +19,14 @@ public class Request {
     private String requestNumber;
 
     @Column(nullable = false, updatable = false, unique = true)
-    @JsonIgnore
-    private Long sequenceId;
-
-    @PrePersist
-    public void generateId() {
-        if (this.requestNumber == null) {  // Ensure only new records generate an ID
-            this.requestNumber = "REQ-" + String.format("%06d", this.sequenceId);
-        }
-    }
 
     private String description;
     private String requestedBy;
-    private String customerNumber;
+    private String userId;
     private String statusUpdatedBy;
-    private String serviceType;
+    @OneToOne
+    @JoinColumn(name = "service_id", nullable = false)
+    private Services service;
 
     @JsonIgnore
     private String sessionId;
@@ -41,7 +35,7 @@ public class Request {
     private Status status;
 
     private LocalDateTime time;
-    private String slaTime;
+    private int slaTime;
 
     private String comment="";
 
