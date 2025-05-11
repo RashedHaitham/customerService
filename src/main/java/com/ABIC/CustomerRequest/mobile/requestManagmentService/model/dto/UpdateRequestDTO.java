@@ -22,9 +22,9 @@ public class UpdateRequestDTO {
 
     private String status;
 
-    private String serviceType;
+    private Long serviceId;
 
-    private String slaTime;
+    private int slaTime;
 
     private String comment;
 

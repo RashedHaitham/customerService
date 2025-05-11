@@ -7,10 +7,12 @@ import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.RequestStat
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.UpdateRequestDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.repository.RequestRepository;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.ServiceType;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.Services;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.TemplateField;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.TemplateFieldValue;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.FieldValueDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.TemplateSubmissionDTO;
+import com.ABIC.CustomerRequest.web.serviceManagment.repository.ServiceRepository;
 import com.ABIC.CustomerRequest.web.serviceManagment.repository.ServiceTypeRepository;
 import com.ABIC.CustomerRequest.util.JWTUtil;
 import com.ABIC.CustomerRequest.web.serviceManagment.repository.TemplateFieldValueRepository;
@@ -43,13 +45,16 @@ public class RequestService {
     private static final Logger logger = LoggerFactory.getLogger(RequestService.class);
     private final ServiceManagementService serviceManagementService;
     private final TemplateFieldValueRepository templateFieldValueRepository;
-    public RequestService(RequestRepository requestRepository, JWTUtil jwtUtil, HttpServletRequest httpServletRequest, ServiceTypeRepository serviceTypeRepository, ServiceManagementService serviceManagementService, TemplateFieldValueRepository templateFieldValueRepository) {
+    private final ServiceRepository serviceRepository;
+
+    public RequestService(RequestRepository requestRepository, JWTUtil jwtUtil, HttpServletRequest httpServletRequest, ServiceTypeRepository serviceTypeRepository, ServiceManagementService serviceManagementService, TemplateFieldValueRepository templateFieldValueRepository, ServiceRepository serviceRepository) {
         this.requestRepository = requestRepository;
         this.jwtUtil = jwtUtil;
         this.httpServletRequest = httpServletRequest;
         this.serviceTypeRepository = serviceTypeRepository;
         this.serviceManagementService = serviceManagementService;
         this.templateFieldValueRepository = templateFieldValueRepository;
+        this.serviceRepository = serviceRepository;
     }
 
     public Page<Request> getAllRequests(Pageable pageable) {
@@ -74,24 +79,29 @@ public class RequestService {
     }
 
     public Request saveRequest(AddRequestDTO requestDTO, String sessionId, String channelId, String clientVersion) {
-
         String requestNumber = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
+
+        Services service = serviceRepository.findById(requestDTO.getServiceId())
+                .orElseThrow(() -> new RuntimeException("Service not found with ID: " + requestDTO.getServiceId()));
 
         Request savedRequest = new Request();
         savedRequest.setRequestNumber(requestNumber);
-
         savedRequest.setRequestedBy(requestDTO.getRequestedBy());
         savedRequest.setCustomerNumber(requestDTO.getCustomerNumber());
         savedRequest.setDescription(requestDTO.getDescription());
         savedRequest.setTime(LocalDateTime.now());
-        savedRequest.setServiceType(requestDTO.getServiceType());
+        savedRequest.setService(service);
         savedRequest.setStatus(Request.Status.PENDING);
+
+        savedRequest.setSlaTime(service.getSlaTime());
 
         savedRequest.setChannelId(channelId);
         savedRequest.setClientVersion(clientVersion);
         savedRequest.setSessionId(sessionId);
+
         return requestRepository.save(savedRequest);
     }
+
 
     public Request updateRequestStatus(String requestNumber, Request.Status status,String comment) {
         Request request = requestRepository.findByRequestNumber(requestNumber);
@@ -146,11 +156,15 @@ public class RequestService {
         Optional.ofNullable(requestDTO.getStatus())
                 .filter(status -> !status.isEmpty())
                 .ifPresent(status -> request.setStatus(Request.Status.valueOf(status)));
-        Optional.ofNullable(requestDTO.getServiceType())
-                .filter(service -> !service.isEmpty())
-                .ifPresent(service -> request.setServiceType(requestDTO.getServiceType()));
 
-        Optional.ofNullable(requestDTO.getSlaTime()).ifPresent(request::setSlaTime);
+        Optional.ofNullable(requestDTO.getServiceId())
+                .ifPresent(serviceId -> {
+                    Services service = serviceRepository.findById(serviceId)
+                            .orElseThrow(() -> new RuntimeException("Service not found with ID: " + serviceId));
+                    request.setService(service);
+                    request.setSlaTime(service.getSlaTime());
+                });
+
 
         return requestRepository.save(request);
     }

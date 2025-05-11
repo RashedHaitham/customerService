@@ -245,10 +245,13 @@ public class ServiceManagementService {
         Map<Long, TemplateField> existingFieldMap = templateFieldRepository.findByGroupId(groupId).stream()
                 .collect(Collectors.toMap(TemplateField::getId, field -> field));
 
+        Set<Long> incomingIds = new HashSet<>();
+
         for (TemplateFieldDTO incomingField : request.getFields()) {
             //update existing field
             if (incomingField.getId() != null && existingFieldMap.containsKey(incomingField.getId())) {
                 updateExistingField(existingFieldMap.get(incomingField.getId()), incomingField);
+                incomingIds.add(incomingField.getId());
             }
             //create new field
             else {
@@ -256,6 +259,10 @@ public class ServiceManagementService {
                 templateFieldRepository.save(newField);
             }
         }
+
+        existingFieldMap.keySet().stream()
+                .filter(existingId -> !incomingIds.contains(existingId))
+                .forEach(this::deleteTemplateField);
 
         return true;
     }

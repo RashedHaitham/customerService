@@ -1,5 +1,6 @@
 package com.ABIC.CustomerRequest.mobile.requestManagmentService.model;
 
+import com.ABIC.CustomerRequest.web.serviceManagment.model.Services;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -23,7 +24,9 @@ public class Request {
     private String requestedBy;
     private String customerNumber;
     private String statusUpdatedBy;
-    private String serviceType;
+    @OneToOne
+    @JoinColumn(name = "service_id", nullable = false)
+    private Services service;
 
     @JsonIgnore
     private String sessionId;
@@ -32,7 +35,7 @@ public class Request {
     private Status status;
 
     private LocalDateTime time;
-    private String slaTime;
+    private int slaTime;
 
     private String comment="";
 
