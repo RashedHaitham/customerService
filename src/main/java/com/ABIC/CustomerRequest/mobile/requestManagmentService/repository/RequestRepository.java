@@ -10,7 +10,7 @@ import java.util.List;
 public interface RequestRepository extends JpaRepository<Request, String> {
     Request findByRequestNumber(String requestNumber);
 
-    Page<Request> findByStatusAndCustomerNumber(Request.Status status,String customerNumber, Pageable pageable);
+    Page<Request> findByStatusAndUserId(Request.Status status,String customerNumber, Pageable pageable);
 
 
     @Query("SELECT r.status, COUNT(r) FROM Request r GROUP BY r.status")
@@ -18,5 +18,5 @@ public interface RequestRepository extends JpaRepository<Request, String> {
 
     Page<Request> findByStatus(Request.Status status, Pageable pageable);
 
-    Page<Request> findRequestByCustomerNumber(String requestNumber, Pageable pageable);
+    Page<Request> findRequestByUserId(String requestNumber, Pageable pageable);
 }

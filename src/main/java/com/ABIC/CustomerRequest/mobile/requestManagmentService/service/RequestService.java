@@ -62,7 +62,7 @@ public class RequestService {
     }
 
     public Page<Request> getAllRequests(String customerNumber, Pageable pageable) {
-        return requestRepository.findRequestByCustomerNumber(customerNumber, pageable);
+        return requestRepository.findRequestByUserId(customerNumber, pageable);
     }
 
     public Page<Request> getRequestsByStatus(Request.Status status, Pageable pageable) {
@@ -70,7 +70,7 @@ public class RequestService {
     }
 
     public Page<Request> findByStatusAndCustomerNumber(Request.Status status,String customerNumber ,Pageable pageable){
-        return requestRepository.findByStatusAndCustomerNumber(status,customerNumber,pageable);
+        return requestRepository.findByStatusAndUserId(status,customerNumber,pageable);
     }
 
 
@@ -87,7 +87,7 @@ public class RequestService {
         Request savedRequest = new Request();
         savedRequest.setRequestNumber(requestNumber);
         savedRequest.setRequestedBy(requestDTO.getRequestedBy());
-        savedRequest.setCustomerNumber(requestDTO.getCustomerNumber());
+        savedRequest.setUserId(requestDTO.getUserId());
         savedRequest.setDescription(requestDTO.getDescription());
         savedRequest.setTime(LocalDateTime.now());
         savedRequest.setService(service);
@@ -149,7 +149,7 @@ public class RequestService {
         if (request == null) {
             throw new RuntimeException("Request not found with number: " + requestNumber);
         }
-        Optional.ofNullable(requestDTO.getCustomerNumber()).filter(desc -> !desc.isEmpty()).ifPresent(request::setCustomerNumber);
+        Optional.ofNullable(requestDTO.getCustomerNumber()).filter(desc -> !desc.isEmpty()).ifPresent(request::setUserId);
         Optional.ofNullable(requestDTO.getDescription()).filter(desc -> !desc.isEmpty()).ifPresent(request::setDescription);
         Optional.ofNullable(requestDTO.getRequestedBy()).filter(reqBy -> !reqBy.isEmpty()).ifPresent(request::setRequestedBy);
         Optional.ofNullable(requestDTO.getStatusUpdatedBy()).filter(statusBy -> !statusBy.isEmpty()).ifPresent(request::setStatusUpdatedBy);
@@ -214,40 +214,45 @@ public class RequestService {
     }
 
 
-//    public boolean validateSession(ValidateRequest validateRequest) {
-//        String validationUrl = "http://10.38.2.15:8091/MubasherRESTAPI/api/RestSOA/validateSession";
-//
-//        try {
-//            RestTemplate restTemplate = new RestTemplate();
-//            HttpHeaders headers = new HttpHeaders();
-//            headers.setContentType(MediaType.APPLICATION_JSON);
-//
-//            Map<String, Object> requestBody = new HashMap<>();
-//            requestBody.put("HED", Map.of(
-//                    "sessionId", validateRequest.getSessionId(),
-//                    "clientVersion", validateRequest.getClientVersion(),
-//                    "serviceId", validateRequest.getServiceId(),
-//                    "userId", validateRequest.getUserId(),
-//                    "channelId", validateRequest.getChannelId()
-//            ));
-//            requestBody.put("DAT", new HashMap<>());
-//
-//            HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
-//
-//            ResponseEntity<Map> responseEntity = restTemplate.postForEntity(validationUrl, requestEntity, Map.class);
-//
-//            Map<String, Object> responseBody = responseEntity.getBody();
-//            if (responseBody != null && responseBody.containsKey("status")) {
-//                int status = (int) responseBody.get("status");
-//                return status == 1;
-//            }
-//
-//        } catch (Exception e) {
-//            logger.error("Session validation failed: {}", e.getMessage());
-//        }
-//
-//        return false;
-//    }
+    public boolean validateSession(ValidateRequest validateRequest) {
+        String validationUrl = "http://10.38.2.17:8080/MubasherRESTAPI/api/RestSOA/validateSession";
+
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("HED", Map.of(
+                    "sessionId", validateRequest.getSessionId(),
+                    "clientVersion", validateRequest.getClientVersion(),
+                    "serviceId", validateRequest.getServiceId(),
+                    "userId", validateRequest.getUserId(),
+                    "channelId", validateRequest.getChannelId()
+            ));
+            requestBody.put("DAT", new HashMap<>());
+
+            HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
+
+            ResponseEntity<Map> responseEntity = restTemplate.postForEntity(validationUrl, requestEntity, Map.class);
+
+            Map<String, Object> responseBody = responseEntity.getBody();
+
+            if (responseBody != null && responseBody.containsKey("DAT")) {
+                Map<String, Object> dat = (Map<String, Object>) responseBody.get("DAT");
+                if (dat != null && dat.containsKey("status")) {
+                    int status = (int) dat.get("status");
+                    return status == 1;
+                }
+            }
+
+
+        } catch (Exception e) {
+            logger.error("Session validation failed: {}", e.getMessage());
+        }
+
+        return false;
+    }
 
 
 }

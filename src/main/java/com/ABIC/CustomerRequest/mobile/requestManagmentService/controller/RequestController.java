@@ -14,6 +14,7 @@ import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.TemplateSubmissio
 import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,10 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/requests")
@@ -42,34 +40,52 @@ public class RequestController {
         this.requestService = requestService;
     }
 
-    @GetMapping("/all/{customerNumber}")
+    @GetMapping("/all/{userId}")
     public ResponseEntity<Response<PaginatedResponse<Request>>> getAllRequests(
             @RequestHeader("Session-Id") String sessionId,
-            @PathVariable String customerNumber,
+            @RequestHeader("Client-Version") String clientVersion,
+            @RequestHeader("Channel-Id") String channelId,
+            @RequestHeader("Service-Id") String serviceId,
+            @PathVariable String userId,
             @RequestParam(required = false) Request.Status status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
+        if (!ACCEPTED_CHANNEL_IDS.contains(channelId)) {
+            PaginatedResponse<Request> emptyResponse = new PaginatedResponse<>(new PageImpl<>(new ArrayList<>()));
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ResponseUtils.error(HttpStatus.FORBIDDEN.value(), emptyResponse));
+        }
+
+        ValidateRequest validateRequest = new ValidateRequest(
+                sessionId,
+                clientVersion,
+                serviceId,
+                userId,
+                channelId
+        );
+
+        //should validate session and useId
+        if (!requestService.validateSession(validateRequest)) {
+            PaginatedResponse<Request> emptyResponse = new PaginatedResponse<>(new PageImpl<>(new ArrayList<>()));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ResponseUtils.error(HttpStatus.UNAUTHORIZED.value(), emptyResponse));
+        }
+
         Pageable pageable = PageRequest.of(page, size);
         Page<Request> requestsPage;
 
-//        if (!requestService.validateSession(sessionId)) {
-//            Response<PaginatedResponse<Request>> errorResponse =
-//                    ResponseUtils.error(HttpStatus.FORBIDDEN.value(), null);
-//            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
-//        }
-
         if (status != null) {
-            requestsPage = requestService.findByStatusAndCustomerNumber(status,customerNumber, pageable);
+            requestsPage = requestService.findByStatusAndCustomerNumber(status, userId, pageable);
         } else {
-            requestsPage = requestService.getAllRequests(customerNumber,pageable);
+            requestsPage = requestService.getAllRequests(userId, pageable);
         }
 
         PaginatedResponse<Request> responseData = new PaginatedResponse<>(requestsPage);
-
-        Response<PaginatedResponse<Request>> response = ResponseUtils.success(HttpStatus.OK.value(), responseData);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ResponseUtils.success(HttpStatus.OK.value(), responseData));
     }
+
+
 
 
     @PostMapping("/add-request")
@@ -88,10 +104,10 @@ public class RequestController {
                     .body(ResponseUtils.error(HttpStatus.FORBIDDEN.value(), "Invalid Channel-Id"));
         }
 
-//        if (!requestService.validateSession(validateRequest)) {
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-//                    .body(ResponseUtils.error(HttpStatus.UNAUTHORIZED.value(), "Invalid session ID"));
-//        }
+        if (!requestService.validateSession(validateRequest)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ResponseUtils.error(HttpStatus.UNAUTHORIZED.value(), "Invalid session ID"));
+        }
 
         try {
             logger.info("Received request creation: {}, Channel: {}, Client-Version: {}", req, channelId, clientVersion);
@@ -135,7 +151,7 @@ public class RequestController {
     @PostMapping("/service/submit")
     public ResponseEntity<String> submitForm(@RequestBody TemplateSubmissionDTO submissionDTO,@RequestHeader("sessionId") String sessionId) {
 
-        //customer number should be retrieved via sessionId
+        //userId should be retrieved via sessionId
         String submissionId = requestService.submitTemplateForm(submissionDTO,sessionId,"1234");
         return ResponseEntity.ok("Form submitted successfully. Submission ID: " + submissionId);
     }

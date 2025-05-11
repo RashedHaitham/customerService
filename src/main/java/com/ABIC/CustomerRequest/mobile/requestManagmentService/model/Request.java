@@ -22,7 +22,7 @@ public class Request {
 
     private String description;
     private String requestedBy;
-    private String customerNumber;
+    private String userId;
     private String statusUpdatedBy;
     @OneToOne
     @JoinColumn(name = "service_id", nullable = false)

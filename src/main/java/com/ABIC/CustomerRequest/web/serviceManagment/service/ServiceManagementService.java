@@ -432,7 +432,7 @@ public class ServiceManagementService {
                             request.getRequestedBy(),
                             request.getCustomerNumber(),
                             request.getStatusUpdatedBy(),
-                            request.getServiceType(),
+                            request.getService().getId(),
                             request.getStatus().name(),
                             request.getTime(),
                             request.getSlaTime(),

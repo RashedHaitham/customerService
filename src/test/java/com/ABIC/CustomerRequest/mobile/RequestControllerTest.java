@@ -48,7 +48,7 @@ class RequestControllerTest {
                 .thenReturn(mockPage);
 
         ResponseEntity<Response<PaginatedResponse<Request>>> response = requestController.getAllRequests(
-                "session", "1234", null, 0, 10);
+                "session","client","channel","service", "1234", null, 0, 10);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertFalse(response.getBody().getData().getContent().isEmpty());
@@ -62,7 +62,7 @@ class RequestControllerTest {
                 .thenReturn(mockPage);
 
         ResponseEntity<Response<PaginatedResponse<Request>>> response = requestController.getAllRequests(
-                "session", "1234", status, 0, 10);
+                "session", "1234","channel","id", "user",status, 0, 10);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertFalse(response.getBody().getData().getContent().isEmpty());
@@ -130,7 +130,7 @@ class RequestControllerTest {
     private RequestWrapper getSampleRequestWrapper(String channelId) {
         AddRequestDTO addRequestDTO = new AddRequestDTO(
                 "الرجاء حذف المحفظة",
-                "IT",
+                5L,
                 "1234",
                 "someone"
         );

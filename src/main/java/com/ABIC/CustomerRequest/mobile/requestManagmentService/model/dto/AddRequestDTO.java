@@ -18,8 +18,8 @@ public class AddRequestDTO {
     @NotBlank(message = "Service cannot be empty")
     private Long serviceId;
 
-    @NotBlank(message = "Customer number cannot be empty")
-    private String customerNumber;
+    @NotBlank(message = "User ID cannot be empty")
+    private String userId;
 
     @NotBlank(message = "Requested by cannot be empty")
     private String requestedBy;
