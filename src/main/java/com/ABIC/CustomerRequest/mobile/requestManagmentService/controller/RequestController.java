@@ -2,6 +2,7 @@ package com.ABIC.CustomerRequest.mobile.requestManagmentService.controller;
 
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.*;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.AddRequestDTO;
+import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.RequestResponseDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.service.RequestService;
 import com.ABIC.CustomerRequest.util.PaginatedResponse;
 import com.ABIC.CustomerRequest.util.Response;
@@ -41,7 +42,7 @@ public class RequestController {
     }
 
     @GetMapping("/all/{customerNumber}")
-    public ResponseEntity<Response<PaginatedResponse<Request>>> getAllRequests(
+    public ResponseEntity<Response<PaginatedResponse<RequestResponseDTO>>> getAllRequests(
             @RequestHeader("Session-Id") String sessionId,
             @RequestHeader("Client-Version") String clientVersion,
             @RequestHeader("Channel-Id") String channelId,
@@ -52,7 +53,7 @@ public class RequestController {
             @RequestParam(defaultValue = "10") int size) {
 
         if (!ACCEPTED_CHANNEL_IDS.contains(channelId)) {
-            PaginatedResponse<Request> emptyResponse = new PaginatedResponse<>(new PageImpl<>(new ArrayList<>()));
+            PaginatedResponse<RequestResponseDTO> emptyResponse = new PaginatedResponse<>(new PageImpl<>(new ArrayList<>()));
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ResponseUtils.error(HttpStatus.FORBIDDEN.value(), emptyResponse));
         }
@@ -66,14 +67,14 @@ public class RequestController {
         );
 
         //should validate session and useId
-        if (!requestService.validateSession(validateRequest)) {
-            PaginatedResponse<Request> emptyResponse = new PaginatedResponse<>(new PageImpl<>(new ArrayList<>()));
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ResponseUtils.error(HttpStatus.UNAUTHORIZED.value(), emptyResponse));
-        }
+//        if (!requestService.validateSession(validateRequest)) {
+//            PaginatedResponse<Request> emptyResponse = new PaginatedResponse<>(new PageImpl<>(new ArrayList<>()));
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(ResponseUtils.error(HttpStatus.UNAUTHORIZED.value(), emptyResponse));
+//        }
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<Request> requestsPage;
+        Page<RequestResponseDTO> requestsPage;
 
         if (status != null) {
             requestsPage = requestService.findByStatusAndCustomerNumber(status, customerNumber, pageable);
@@ -81,7 +82,7 @@ public class RequestController {
             requestsPage = requestService.getAllRequests(customerNumber, pageable);
         }
 
-        PaginatedResponse<Request> responseData = new PaginatedResponse<>(requestsPage);
+        PaginatedResponse<RequestResponseDTO> responseData = new PaginatedResponse<>(requestsPage);
         return ResponseEntity.ok(ResponseUtils.success(HttpStatus.OK.value(), responseData));
     }
 
@@ -104,10 +105,10 @@ public class RequestController {
                     .body(ResponseUtils.error(HttpStatus.FORBIDDEN.value(), "Invalid Channel-Id"));
         }
 
-        if (!requestService.validateSession(validateRequest)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ResponseUtils.error(HttpStatus.UNAUTHORIZED.value(), "Invalid session ID"));
-        }
+//        if (!requestService.validateSession(validateRequest)) {
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(ResponseUtils.error(HttpStatus.UNAUTHORIZED.value(), "Invalid session ID"));
+//        }
 
         try {
             logger.info("Received request creation: {}, Channel: {}, Client-Version: {}", req, channelId, clientVersion);

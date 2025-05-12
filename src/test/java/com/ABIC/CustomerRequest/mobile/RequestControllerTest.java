@@ -5,6 +5,7 @@ import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.Request;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.RequestWrapper;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.ValidateRequest;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.AddRequestDTO;
+import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.RequestResponseDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.service.RequestService;
 import com.ABIC.CustomerRequest.util.PaginatedResponse;
 import com.ABIC.CustomerRequest.util.Response;
@@ -43,11 +44,11 @@ class RequestControllerTest {
 
     @Test
     void testGetAllRequestsWithoutStatus() {
-        Page<Request> mockPage = new PageImpl<>(List.of(new Request()));
+        Page<RequestResponseDTO> mockPage = new PageImpl<>(List.of(new RequestResponseDTO()));
         when(requestService.getAllRequests(eq("1234"), any(Pageable.class)))
                 .thenReturn(mockPage);
 
-        ResponseEntity<Response<PaginatedResponse<Request>>> response = requestController.getAllRequests(
+        ResponseEntity<Response<PaginatedResponse<RequestResponseDTO>>> response = requestController.getAllRequests(
                 "session","client","channel","service", "1234", null, 0, 10);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -57,11 +58,11 @@ class RequestControllerTest {
     @Test
     void testGetAllRequestsWithStatus() {
         Request.Status status = Request.Status.PENDING;
-        Page<Request> mockPage = new PageImpl<>(List.of(new Request()));
+        Page<RequestResponseDTO> mockPage = new PageImpl<>(List.of(new RequestResponseDTO()));
         when(requestService.getRequestsByStatus(eq(status), any(Pageable.class)))
                 .thenReturn(mockPage);
 
-        ResponseEntity<Response<PaginatedResponse<Request>>> response = requestController.getAllRequests(
+        ResponseEntity<Response<PaginatedResponse<RequestResponseDTO>>> response = requestController.getAllRequests(
                 "session", "1234","channel","id", "user",status, 0, 10);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());

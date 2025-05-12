@@ -3,6 +3,7 @@ package com.ABIC.CustomerRequest.web;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.Request;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.RequestStatusSummary;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.StatusUpdateRequest;
+import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.RequestResponseDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.UpdateRequestDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.service.RequestService;
 import com.ABIC.CustomerRequest.util.Response;
@@ -205,7 +206,7 @@ public class ServiceManagementControllerTest {
 
     @Test
     void testGetAllRequests() throws Exception {
-        Page<Request> page = new PageImpl<>(List.of(new Request()));
+        Page<RequestResponseDTO> page = new PageImpl<>(List.of(new RequestResponseDTO()));
         Mockito.when(requestService.getAllRequests(any())).thenReturn(page);
 
         mockMvc.perform(get("/api/services/all-requests"))

@@ -1,4 +1,0 @@
-package com.ABIC.CustomerRequest.web.serviceManagment.model.dto;
-
-public class RequestResponseDTO {
-}

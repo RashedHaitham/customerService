@@ -58,26 +58,21 @@ public class RequestService {
         this.serviceRepository = serviceRepository;
     }
 
-    public Page<RequestResponseDTO> getAllRequests(Pageable pageable) {
-        return requestRepository.findAll(pageable)
-                .map(this::mapToDTO);
+    public Page<Request> getAllRequests(Pageable pageable) {
+        return requestRepository.findAll(pageable);
     }
 
-    public Page<RequestResponseDTO> getAllRequests(String customerNumber, Pageable pageable) {
-        return requestRepository.findRequestByCustomerNumber(customerNumber, pageable)
-                .map(this::mapToDTO);
+    public Page<Request> getAllRequests(String customerNumber, Pageable pageable) {
+        return requestRepository.findRequestByCustomerNumber(customerNumber, pageable);
     }
 
-    public Page<RequestResponseDTO> getRequestsByStatus(Request.Status status, Pageable pageable) {
-        return requestRepository.findByStatus(status, pageable)
-                .map(this::mapToDTO);
+    public Page<Request> getRequestsByStatus(Request.Status status, Pageable pageable) {
+        return requestRepository.findByStatus(status, pageable);
     }
 
-    public Page<RequestResponseDTO> findByStatusAndCustomerNumber(Request.Status status, String customerNumber, Pageable pageable) {
-        return requestRepository.findByStatusAndCustomerNumber(status, customerNumber, pageable)
-                .map(this::mapToDTO);
+    public Page<Request> findByStatusAndCustomerNumber(Request.Status status,String customerNumber ,Pageable pageable){
+        return requestRepository.findByStatusAndCustomerNumber(status,customerNumber,pageable);
     }
-
 
 
     public Optional<Request> getRequestByNumber(String requestNumber) {

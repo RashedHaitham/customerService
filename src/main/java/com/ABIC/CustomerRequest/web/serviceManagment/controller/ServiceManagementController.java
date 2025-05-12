@@ -1,6 +1,7 @@
 package com.ABIC.CustomerRequest.web.serviceManagment.controller;
 
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.*;
+import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.RequestResponseDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.UpdateRequestDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.service.RequestService;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.*;
@@ -35,6 +36,13 @@ public class ServiceManagementController {
     public ResponseEntity<Response<String>> addService(@RequestBody ServiceDTO service) {
         serviceManagementService.createService(service);
         Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Service added successfully");
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{serviceId}")
+    public ResponseEntity<Response<ServiceResponseDTO>> getService(@PathVariable Long serviceId) {
+        ServiceResponseDTO service = serviceManagementService.getService(serviceId);
+        Response<ServiceResponseDTO> response = ResponseUtils.success(HttpStatus.OK.value(), service);
         return ResponseEntity.ok(response);
     }
 
@@ -146,13 +154,13 @@ public class ServiceManagementController {
 
 
     @GetMapping("/all-requests")
-    public ResponseEntity<Response<PaginatedResponse<Request>>> getAllRequests(
+    public ResponseEntity<Response<PaginatedResponse<RequestResponseDTO>>> getAllRequests(
             @RequestParam(required = false) Request.Status status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<Request> requestsPage;
+        Page<RequestResponseDTO> requestsPage;
 
         if (status != null) {
             requestsPage = requestService.getRequestsByStatus(status, pageable);
@@ -160,9 +168,9 @@ public class ServiceManagementController {
             requestsPage = requestService.getAllRequests(pageable);
         }
 
-        PaginatedResponse<Request> responseData = new PaginatedResponse<>(requestsPage);
+        PaginatedResponse<RequestResponseDTO> responseData = new PaginatedResponse<>(requestsPage);
 
-        Response<PaginatedResponse<Request>> response = ResponseUtils.success(HttpStatus.OK.value(), responseData);
+        Response<PaginatedResponse<RequestResponseDTO>> response = ResponseUtils.success(HttpStatus.OK.value(), responseData);
         return ResponseEntity.ok(response);
     }
 

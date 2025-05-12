@@ -453,4 +453,9 @@ public class ServiceManagementService {
     private String convertListToString(List<String> list) {
         return (list == null || list.isEmpty()) ? null : String.join(",", list);
     }
+
+    public ServiceResponseDTO getService(Long serviceId) {
+        Services service = serviceRepository.findById(serviceId).orElseThrow();
+        return mapToDTO(service);
+    }
 }
