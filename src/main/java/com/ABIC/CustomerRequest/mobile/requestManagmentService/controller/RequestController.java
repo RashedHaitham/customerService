@@ -40,13 +40,13 @@ public class RequestController {
         this.requestService = requestService;
     }
 
-    @GetMapping("/all/{userId}")
+    @GetMapping("/all/{customerNumber}")
     public ResponseEntity<Response<PaginatedResponse<Request>>> getAllRequests(
             @RequestHeader("Session-Id") String sessionId,
             @RequestHeader("Client-Version") String clientVersion,
             @RequestHeader("Channel-Id") String channelId,
             @RequestHeader("Service-Id") String serviceId,
-            @PathVariable String userId,
+            @PathVariable String customerNumber,
             @RequestParam(required = false) Request.Status status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -61,7 +61,7 @@ public class RequestController {
                 sessionId,
                 clientVersion,
                 serviceId,
-                userId,
+                customerNumber,
                 channelId
         );
 
@@ -76,9 +76,9 @@ public class RequestController {
         Page<Request> requestsPage;
 
         if (status != null) {
-            requestsPage = requestService.findByStatusAndCustomerNumber(status, userId, pageable);
+            requestsPage = requestService.findByStatusAndCustomerNumber(status, customerNumber, pageable);
         } else {
-            requestsPage = requestService.getAllRequests(userId, pageable);
+            requestsPage = requestService.getAllRequests(customerNumber, pageable);
         }
 
         PaginatedResponse<Request> responseData = new PaginatedResponse<>(requestsPage);

@@ -408,7 +408,7 @@ public class ServiceManagementService {
         return requestRepository.findById(requestNumber)
                 .map(request -> {
                     List<TemplateFieldValue> fieldValues = templateFieldValueRepository
-                            .findByCustomerNumber( request.getUserId());
+                            .findByCustomerNumber( request.getCustomerNumber());
 
                     List<FieldValueDTO> fields = fieldValues.stream()
                             .map(fv -> {
@@ -430,7 +430,7 @@ public class ServiceManagementService {
                             request.getRequestNumber(),
                             request.getDescription(),
                             request.getRequestedBy(),
-                            request.getUserId(),
+                            request.getCustomerNumber(),
                             request.getStatusUpdatedBy(),
                             request.getService().getId(),
                             request.getStatus().name(),
