@@ -62,7 +62,7 @@ public class RequestService {
     }
 
     public Page<Request> getAllRequests(String customerNumber, Pageable pageable) {
-        return requestRepository.findRequestByUserId(customerNumber, pageable);
+        return requestRepository.findRequestByCustomerNumber(customerNumber, pageable);
     }
 
     public Page<Request> getRequestsByStatus(Request.Status status, Pageable pageable) {
@@ -70,7 +70,7 @@ public class RequestService {
     }
 
     public Page<Request> findByStatusAndCustomerNumber(Request.Status status,String customerNumber ,Pageable pageable){
-        return requestRepository.findByStatusAndUserId(status,customerNumber,pageable);
+        return requestRepository.findByStatusAndCustomerNumber(status,customerNumber,pageable);
     }
 
 
@@ -87,7 +87,7 @@ public class RequestService {
         Request savedRequest = new Request();
         savedRequest.setRequestNumber(requestNumber);
         savedRequest.setRequestedBy(requestDTO.getRequestedBy());
-        savedRequest.setUserId(requestDTO.getUserId());
+        savedRequest.setCustomerNumber(requestDTO.getCustomerNumber());
         savedRequest.setDescription(requestDTO.getDescription());
         savedRequest.setTime(LocalDateTime.now());
         savedRequest.setService(service);
@@ -149,7 +149,7 @@ public class RequestService {
         if (request == null) {
             throw new RuntimeException("Request not found with number: " + requestNumber);
         }
-        Optional.ofNullable(requestDTO.getCustomerNumber()).filter(desc -> !desc.isEmpty()).ifPresent(request::setUserId);
+        Optional.ofNullable(requestDTO.getCustomerNumber()).filter(desc -> !desc.isEmpty()).ifPresent(request::setCustomerNumber);
         Optional.ofNullable(requestDTO.getDescription()).filter(desc -> !desc.isEmpty()).ifPresent(request::setDescription);
         Optional.ofNullable(requestDTO.getRequestedBy()).filter(reqBy -> !reqBy.isEmpty()).ifPresent(request::setRequestedBy);
         Optional.ofNullable(requestDTO.getStatusUpdatedBy()).filter(statusBy -> !statusBy.isEmpty()).ifPresent(request::setStatusUpdatedBy);
