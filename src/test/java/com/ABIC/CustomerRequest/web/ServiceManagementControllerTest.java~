@@ -140,9 +140,28 @@ public class ServiceManagementControllerTest {
 
     @Test
     void testGetAllServices() throws Exception {
-        // Skip this test as it requires more complex setup
-        // In a real scenario, we would need to properly mock the JWT authentication
-        // and ensure the controller method doesn't encounter NPEs
+        // Given
+        Services service = new Services();
+        service.setId(1L);
+        service.setEnglishName("Test Service");
+        service.setArabicName("خدمة تجريبية");
+
+        List<Services> services = List.of(service);
+        Page<Services> page = new PageImpl<>(services);
+
+        // When
+        Mockito.when(serviceManagementService.getAllServices(any(Pageable.class))).thenReturn(page);
+
+        // Then
+        mockMvc.perform(get("/api/services/all")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .header("Authorization", "Bearer mock-jwt-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].id").value(1))
+                .andExpect(jsonPath("$.data.content[0].englishName").value("Test Service"));
     }
 
     @Test

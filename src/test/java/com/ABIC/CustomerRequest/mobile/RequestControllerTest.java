@@ -11,6 +11,7 @@ import com.ABIC.CustomerRequest.util.PaginatedResponse;
 import com.ABIC.CustomerRequest.util.Response;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.ServiceType;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.Services;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.TemplateFieldDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.TemplateSubmissionDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementService;
 
@@ -49,7 +50,7 @@ class RequestControllerTest {
                 .thenReturn(mockPage);
 
         ResponseEntity<Response<PaginatedResponse<RequestResponseDTO>>> response = requestController.getAllRequests(
-                "session","client","channel","service", "1234", null, 0, 10);
+                "session","client","34","service", "1234", null, 0, 10);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertFalse(response.getBody().getData().getContent().isEmpty());
@@ -59,11 +60,11 @@ class RequestControllerTest {
     void testGetAllRequestsWithStatus() {
         Request.Status status = Request.Status.PENDING;
         Page<RequestResponseDTO> mockPage = new PageImpl<>(List.of(new RequestResponseDTO()));
-        when(requestService.getRequestsByStatus(eq(status), any(Pageable.class)))
+        when(requestService.findByStatusAndCustomerNumber(eq(status), eq("user"), any(Pageable.class)))
                 .thenReturn(mockPage);
 
         ResponseEntity<Response<PaginatedResponse<RequestResponseDTO>>> response = requestController.getAllRequests(
-                "session", "1234","channel","id", "user",status, 0, 10);
+                "session", "1234","34","id", "user",status, 0, 10);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertFalse(response.getBody().getData().getContent().isEmpty());
@@ -126,6 +127,39 @@ class RequestControllerTest {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(response.getBody().contains("SUB123"));
+    }
+
+    @Test
+    void testGetTemplateFieldsByGroupId() {
+        // Arrange
+        String groupId = "test-group-id";
+        List<TemplateFieldDTO> mockTemplateFields = List.of(
+            new TemplateFieldDTO(
+                1L, 
+                "Test Field EN", 
+                "Test Field AR", 
+                "text", 
+                true, 
+                false, 
+                1, 
+                "Placeholder EN", 
+                "Placeholder AR", 
+                List.of("Option 1", "Option 2"), 
+                List.of("خيار 1", "خيار 2")
+            )
+        );
+
+        when(serviceManagementService.getTemplateFieldsByGroupId(groupId)).thenReturn(mockTemplateFields);
+
+        // Act
+        ResponseEntity<Response<List<TemplateFieldDTO>>> response = requestController.getTemplateFieldsByGroupId(groupId);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertNotNull(response.getBody().getData());
+        assertFalse(response.getBody().getData().isEmpty());
+        assertEquals(mockTemplateFields, response.getBody().getData());
     }
 
     private RequestWrapper getSampleRequestWrapper(String channelId) {
