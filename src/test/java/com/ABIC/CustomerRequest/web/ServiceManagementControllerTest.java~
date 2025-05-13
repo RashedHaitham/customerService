@@ -1,5 +1,7 @@
 package com.ABIC.CustomerRequest.web;
 
+import com.ABIC.CustomerRequest.exception.BusinessException;
+import com.ABIC.CustomerRequest.exception.ResourceNotFoundException;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.Request;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.RequestStatusSummary;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.StatusUpdateRequest;
@@ -11,8 +13,10 @@ import com.ABIC.CustomerRequest.web.config.JWTFilter;
 import com.ABIC.CustomerRequest.web.config.SecurityConfig;
 import com.ABIC.CustomerRequest.web.serviceManagment.controller.ServiceManagementController;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.*;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.CreateTemplateWithFieldsRequestDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.RequestDetailsDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.ServiceDTO;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.TemplateFieldDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -34,6 +38,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.Optional;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.*;
@@ -112,7 +117,8 @@ public class ServiceManagementControllerTest {
         mockMvc.perform(get("/api/services/requests/REQ-000"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value("error"))
-                .andExpect(jsonPath("$.data").doesNotExist());
+                .andExpect(jsonPath("$.data").exists())
+                .andExpect(jsonPath("$.data").value(containsString("Request not found with number")));
     }
 
 
@@ -130,6 +136,11 @@ public class ServiceManagementControllerTest {
         ServiceDTO serviceDTO = new ServiceDTO();
         serviceDTO.setEnglishName("Updated Service");
         serviceDTO.setArabicName("خدمة محدثة");
+        serviceDTO.setDescription("Service Description");
+        serviceDTO.setArabicDescription("وصف الخدمة");
+        serviceDTO.setStatusId(1L);
+        serviceDTO.setServiceTypeId(1L);
+        serviceDTO.setSlaTime(5);
 
         mockMvc.perform(patch("/api/services/1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -140,28 +151,64 @@ public class ServiceManagementControllerTest {
 
     @Test
     void testGetAllServices() throws Exception {
-        // Given
-        Services service = new Services();
-        service.setId(1L);
-        service.setEnglishName("Test Service");
-        service.setArabicName("خدمة تجريبية");
+        // Create a list of ServiceResponseDTO objects for the mock response
+        List<ServiceResponseDTO> serviceList = new ArrayList<>();
+        ServiceResponseDTO service1 = new ServiceResponseDTO();
+        service1.setId(1L);
+        service1.setEnglishName("Test Service 1");
+        service1.setArabicName("خدمة اختبار 1");
+        service1.setDescription("Test Description 1");
+        service1.setArabicDescription("وصف الاختبار 1");
+        service1.setStatusId(1L);
+        service1.setStatusEn("Active");
+        service1.setStatusAr("نشط");
+        service1.setServiceTypeId(1L);
+        service1.setServiceTypeNameEn("Type 1");
+        service1.setServiceTypeNameAr("النوع 1");
+        service1.setSlaTime(5);
 
-        List<Services> services = List.of(service);
-        Page<Services> page = new PageImpl<>(services);
+        ServiceResponseDTO service2 = new ServiceResponseDTO();
+        service2.setId(2L);
+        service2.setEnglishName("Test Service 2");
+        service2.setArabicName("خدمة اختبار 2");
+        service2.setDescription("Test Description 2");
+        service2.setArabicDescription("وصف الاختبار 2");
+        service2.setStatusId(2L);
+        service2.setStatusEn("Inactive");
+        service2.setStatusAr("غير نشط");
+        service2.setServiceTypeId(2L);
+        service2.setServiceTypeNameEn("Type 2");
+        service2.setServiceTypeNameAr("النوع 2");
+        service2.setSlaTime(10);
 
-        // When
-        Mockito.when(serviceManagementService.getAllServices(any(Pageable.class))).thenReturn(page);
+        serviceList.add(service1);
+        serviceList.add(service2);
 
-        // Then
+        // Create a Page object with the service list
+        Page<ServiceResponseDTO> servicePage = new PageImpl<>(serviceList);
+
+        // Mock the service method to return the Page
+        Mockito.when(serviceManagementService.getAllServiceDTOs(any(Pageable.class)))
+               .thenReturn(servicePage);
+
+        // Perform the GET request and verify the response
         mockMvc.perform(get("/api/services/all")
-                        .param("page", "0")
-                        .param("size", "10")
-                        .header("Authorization", "Bearer mock-jwt-token"))
+                .param("page", "0")
+                .param("size", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(2))
                 .andExpect(jsonPath("$.data.content[0].id").value(1))
-                .andExpect(jsonPath("$.data.content[0].englishName").value("Test Service"));
+                .andExpect(jsonPath("$.data.content[0].englishName").value("Test Service 1"))
+                .andExpect(jsonPath("$.data.content[0].arabicName").value("خدمة اختبار 1"))
+                .andExpect(jsonPath("$.data.content[1].id").value(2))
+                .andExpect(jsonPath("$.data.content[1].englishName").value("Test Service 2"))
+                .andExpect(jsonPath("$.data.content[1].arabicName").value("خدمة اختبار 2"))
+                .andExpect(jsonPath("$.data.totalElements").value(2))
+                .andExpect(jsonPath("$.data.totalPages").value(1))
+                .andExpect(jsonPath("$.data.currentPage").value(0));
     }
 
     @Test
@@ -204,7 +251,7 @@ public class ServiceManagementControllerTest {
 
     @Test
     void testUpdateRequestStatus_NotFound() throws Exception {
-        Mockito.doThrow(new RuntimeException("REQ-123 not found"))
+        Mockito.doThrow(new BusinessException("Error updating request status: REQ-123 not found"))
                 .when(requestService)
                 .updateRequestStatus(eq("REQ-123"), any(Request.Status.class), anyString());
 
@@ -215,8 +262,10 @@ public class ServiceManagementControllerTest {
         mockMvc.perform(patch("/api/services/REQ-123/request-status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.data").value("Request not found: REQ-123 not found"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.data").value("Error updating request status: REQ-123 not found"));
     }
 
 
@@ -244,7 +293,7 @@ public class ServiceManagementControllerTest {
 
     @Test
     void testUpdateRequest_NotFound() throws Exception {
-        Mockito.doThrow(new RuntimeException("Request not found"))
+        Mockito.doThrow(new BusinessException("Error updating request: Request not found"))
                 .when(requestService).updateRequest(eq("REQ-321"), any());
 
         UpdateRequestDTO dto = new UpdateRequestDTO();
@@ -253,8 +302,10 @@ public class ServiceManagementControllerTest {
         mockMvc.perform(patch("/api/services/requests/REQ-321")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.data").value("Request not found: Request not found"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.data").value("Error updating request: Request not found"));
     }
 
     @Test
@@ -304,5 +355,106 @@ public class ServiceManagementControllerTest {
                 .andExpect(jsonPath("$.data.content[0].value").value("Test Value"))
                 .andExpect(jsonPath("$.data.content[0].sessionId").value("session-xyz"))
                 .andExpect(jsonPath("$.data.content[0].customerNumber").value("CUST-001"));
+    }
+
+    @Test
+    void testAddServiceValidationFailure() throws Exception {
+        // Create a service DTO with missing required fields
+        ServiceDTO serviceDTO = new ServiceDTO();
+        // Not setting required fields like EnglishName, ArabicName, etc.
+
+        mockMvc.perform(post("/api/services/add-service")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(serviceDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.data.EnglishName").exists())
+                .andExpect(jsonPath("$.data.ArabicName").exists())
+                .andExpect(jsonPath("$.data.description").exists())
+                .andExpect(jsonPath("$.data.ArabicDescription").exists())
+                .andExpect(jsonPath("$.data.statusId").exists())
+                .andExpect(jsonPath("$.data.serviceTypeId").exists());
+    }
+
+    @Test
+    void testUpdateRequestStatusValidationFailure() throws Exception {
+        // Create a status update request with null status (which is required)
+        StatusUpdateRequest req = new StatusUpdateRequest();
+        // Not setting the required status field
+        req.setComment("This should fail validation");
+
+        mockMvc.perform(patch("/api/services/REQ-123/request-status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.data.status").exists());
+    }
+
+    @Test
+    void testCreateTemplateWithFieldsValidationFailure() throws Exception {
+        // Create a template request with missing required fields
+        CreateTemplateWithFieldsRequestDTO requestDTO = new CreateTemplateWithFieldsRequestDTO();
+        // Not setting required fields
+
+        mockMvc.perform(post("/api/services/templateWithFields")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.data.englishName").exists())
+                .andExpect(jsonPath("$.data.arabicName").exists())
+                .andExpect(jsonPath("$.data.fields").exists());
+    }
+
+    @Test
+    void testUpdateRequestWithInvalidData() throws Exception {
+        // Create an update request with invalid data (exceeding max length)
+        UpdateRequestDTO dto = new UpdateRequestDTO();
+        // Set description that exceeds the max length of 500 characters
+        StringBuilder longDescription = new StringBuilder();
+        for (int i = 0; i < 51; i++) {
+            longDescription.append("0123456789");
+        }
+        dto.setDescription(longDescription.toString());
+
+        mockMvc.perform(patch("/api/services/requests/REQ-321")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.data.description").exists());
+    }
+
+    @Test
+    void testResourceNotFoundExceptionHandling() throws Exception {
+        // Mock service to throw ResourceNotFoundException
+        Mockito.when(serviceManagementService.getService(999L))
+                .thenThrow(new ResourceNotFoundException("Service", "id", 999L));
+
+        mockMvc.perform(get("/api/services/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.statusCode").value(404))
+                .andExpect(jsonPath("$.data").value("Service not found with id : '999'"));
+    }
+
+    @Test
+    void testBusinessExceptionHandling() throws Exception {
+        // Mock service to throw BusinessException
+        Mockito.when(serviceManagementService.getAllServiceDTOs(any(Pageable.class)))
+                .thenThrow(new BusinessException("Business rule violated"));
+
+        mockMvc.perform(get("/api/services/all")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.data").value("Business rule violated"));
     }
 }
