@@ -506,20 +506,8 @@ public class ServiceManagementController {
 
     @PatchMapping("/template-field/restore/{fieldId}")
     public ResponseEntity<Response<String>> restoreTemplateField(@PathVariable Long fieldId) {
-        try {
-            if (fieldId == null) {
-                throw new BusinessException("Field ID cannot be null");
-            }
-
-            serviceManagementService.restoreTemplateField(fieldId);
-            Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template field activated successfully");
-            return ResponseEntity.ok(response);
-        } catch (ResourceNotFoundException | BusinessException e) {
-            // Let the global exception handler handle these
-            throw e;
-        } catch (Exception e) {
-            logger.error("Error restoring template field: {}", e.getMessage());
-            throw new BusinessException("Error restoring template field: " + e.getMessage(), e);
-        }
+        serviceManagementService.restoreTemplateField(fieldId);
+        Response<String> response = ResponseUtils.success(HttpStatus.OK.value(), "Template activated successfully");
+        return ResponseEntity.ok(response);
     }
 }

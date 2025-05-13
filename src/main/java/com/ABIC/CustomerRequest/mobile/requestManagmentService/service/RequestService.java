@@ -1,5 +1,7 @@
 package com.ABIC.CustomerRequest.mobile.requestManagmentService.service;
 
+import com.ABIC.CustomerRequest.exception.BusinessException;
+import com.ABIC.CustomerRequest.exception.ResourceNotFoundException;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.ValidateRequest;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.AddRequestDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.Request;
@@ -88,7 +90,7 @@ public class RequestService {
         String requestNumber = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
 
         Services service = serviceRepository.findById(requestDTO.getServiceId())
-                .orElseThrow(() -> new RuntimeException("Service not found with ID: " + requestDTO.getServiceId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Service", "id", requestDTO.getServiceId()));
 
         Request savedRequest = new Request();
         savedRequest.setRequestNumber(requestNumber);
@@ -105,21 +107,36 @@ public class RequestService {
         savedRequest.setClientVersion(clientVersion);
         savedRequest.setSessionId(sessionId);
 
-        return requestRepository.save(savedRequest);
+        try {
+            return requestRepository.save(savedRequest);
+        } catch (Exception e) {
+            logger.error("Error saving request: {}", e.getMessage());
+            throw new BusinessException("Failed to save request: " + e.getMessage(), e);
+        }
     }
 
 
-    public Request updateRequestStatus(String requestNumber, Request.Status status,String comment) {
+    public Request updateRequestStatus(String requestNumber, Request.Status status, String comment) {
         Request request = requestRepository.findByRequestNumber(requestNumber);
-        if (request != null) {
+        if (request == null) {
+            throw new ResourceNotFoundException("Request", "number", requestNumber);
+        }
+
+        try {
             request.setStatus(status);
-            request.setStatusUpdatedBy(
-                    jwtUtil.extractName(extractTokenFromCookie("jwtToken"))
-            );
+            String updatedBy = jwtUtil.extractName(extractTokenFromCookie("jwtToken"));
+            if (updatedBy == null) {
+                throw new BusinessException("Unable to extract user from token");
+            }
+            request.setStatusUpdatedBy(updatedBy);
             request.setComment(comment);
             return requestRepository.save(request);
+        } catch (ResourceNotFoundException | BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error updating request status: {}", e.getMessage());
+            throw new BusinessException("Failed to update request status: " + e.getMessage(), e);
         }
-        throw new RuntimeException("Request not found with number: " + requestNumber);
     }
 
 
@@ -153,26 +170,40 @@ public class RequestService {
     public Request updateRequest(String requestNumber, UpdateRequestDTO requestDTO) {
         Request request = requestRepository.findByRequestNumber(requestNumber);
         if (request == null) {
-            throw new RuntimeException("Request not found with number: " + requestNumber);
+            throw new ResourceNotFoundException("Request", "number", requestNumber);
         }
-        Optional.ofNullable(requestDTO.getCustomerNumber()).filter(desc -> !desc.isEmpty()).ifPresent(request::setCustomerNumber);
-        Optional.ofNullable(requestDTO.getDescription()).filter(desc -> !desc.isEmpty()).ifPresent(request::setDescription);
-        Optional.ofNullable(requestDTO.getRequestedBy()).filter(reqBy -> !reqBy.isEmpty()).ifPresent(request::setRequestedBy);
-        Optional.ofNullable(requestDTO.getStatusUpdatedBy()).filter(statusBy -> !statusBy.isEmpty()).ifPresent(request::setStatusUpdatedBy);
-        Optional.ofNullable(requestDTO.getStatus())
-                .filter(status -> !status.isEmpty())
-                .ifPresent(status -> request.setStatus(Request.Status.valueOf(status)));
 
-        Optional.ofNullable(requestDTO.getServiceId())
-                .ifPresent(serviceId -> {
-                    Services service = serviceRepository.findById(serviceId)
-                            .orElseThrow(() -> new RuntimeException("Service not found with ID: " + serviceId));
-                    request.setService(service);
-                    request.setSlaTime(service.getSlaTime());
-                });
+        try {
+            Optional.ofNullable(requestDTO.getCustomerNumber()).filter(desc -> !desc.isEmpty()).ifPresent(request::setCustomerNumber);
+            Optional.ofNullable(requestDTO.getDescription()).filter(desc -> !desc.isEmpty()).ifPresent(request::setDescription);
+            Optional.ofNullable(requestDTO.getRequestedBy()).filter(reqBy -> !reqBy.isEmpty()).ifPresent(request::setRequestedBy);
+            Optional.ofNullable(requestDTO.getStatusUpdatedBy()).filter(statusBy -> !statusBy.isEmpty()).ifPresent(request::setStatusUpdatedBy);
 
+            Optional.ofNullable(requestDTO.getStatus())
+                    .filter(status -> !status.isEmpty())
+                    .ifPresent(status -> {
+                        try {
+                            request.setStatus(Request.Status.valueOf(status));
+                        } catch (IllegalArgumentException e) {
+                            throw new BusinessException("Invalid status value: " + status);
+                        }
+                    });
 
-        return requestRepository.save(request);
+            Optional.ofNullable(requestDTO.getServiceId())
+                    .ifPresent(serviceId -> {
+                        Services service = serviceRepository.findById(serviceId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Service", "id", serviceId));
+                        request.setService(service);
+                        request.setSlaTime(service.getSlaTime());
+                    });
+
+            return requestRepository.save(request);
+        } catch (ResourceNotFoundException | BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error updating request: {}", e.getMessage());
+            throw new BusinessException("Failed to update request: " + e.getMessage(), e);
+        }
     }
 
     private RequestResponseDTO mapToDTO(Request request) {
@@ -211,25 +242,35 @@ public class RequestService {
 
     public List<ServiceType> getAllServiceTypes() {return serviceTypeRepository.findAll();}
 
-    public String submitTemplateForm(TemplateSubmissionDTO submissionDTO,String sessionId,String customerNumber) {
-
-        for (FieldValueDTO dto : submissionDTO.getValues()) {
-            TemplateField field = serviceManagementService.getTemplateFieldById(dto.getFieldId());
-
-            if (field == null) {
-                throw new RuntimeException("Field not found: " + dto.getFieldId());
-            }
-
-            TemplateFieldValue value = new TemplateFieldValue();
-            value.setField(field);
-            value.setGroupId(submissionDTO.getGroupId());
-            value.setValue(dto.getValue());
-            value.setSessionId(sessionId);
-            value.setCustomerNumber(customerNumber);
-            templateFieldValueRepository.save(value);
+    public String submitTemplateForm(TemplateSubmissionDTO submissionDTO, String sessionId, String customerNumber) {
+        if (submissionDTO.getValues() == null || submissionDTO.getValues().isEmpty()) {
+            throw new BusinessException("No values provided in the submission");
         }
 
-        return "submitted successfully";
+        try {
+            for (FieldValueDTO dto : submissionDTO.getValues()) {
+                TemplateField field = serviceManagementService.getTemplateFieldById(dto.getFieldId());
+
+                if (field == null) {
+                    throw new ResourceNotFoundException("Template Field", "id", dto.getFieldId());
+                }
+
+                TemplateFieldValue value = new TemplateFieldValue();
+                value.setField(field);
+                value.setGroupId(submissionDTO.getGroupId());
+                value.setValue(dto.getValue());
+                value.setSessionId(sessionId);
+                value.setCustomerNumber(customerNumber);
+                templateFieldValueRepository.save(value);
+            }
+
+            return "submitted successfully";
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error submitting template form: {}", e.getMessage());
+            throw new BusinessException("Failed to submit template form: " + e.getMessage(), e);
+        }
     }
 
 

@@ -160,32 +160,13 @@ public class RequestController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        try {
-            if (page < 0) {
-                throw new BusinessException("Page number cannot be negative");
-            }
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Services> servicesPage = serviceManagementService.getServicesByStatus("Active", pageable);
 
-            if (size <= 0) {
-                throw new BusinessException("Page size must be greater than zero");
-            }
+        PaginatedResponse<Services> responseData = new PaginatedResponse<>(servicesPage);
 
-            Pageable pageable = PageRequest.of(page, size);
-            Page<Services> servicesPage = serviceManagementService.getServicesByStatus("Active", pageable);
-
-            if (servicesPage.isEmpty()) {
-                logger.info("No active services found");
-            }
-
-            PaginatedResponse<Services> responseData = new PaginatedResponse<>(servicesPage);
-            Response<PaginatedResponse<Services>> response = ResponseUtils.success(HttpStatus.OK.value(), responseData);
-            return ResponseEntity.ok(response);
-        } catch (ResourceNotFoundException | BusinessException e) {
-            // Let the global exception handler handle these
-            throw e;
-        } catch (Exception e) {
-            logger.error("Error retrieving services: {}", e.getMessage());
-            throw new BusinessException("Error retrieving services: " + e.getMessage(), e);
-        }
+        Response<PaginatedResponse<Services>> response = ResponseUtils.success(HttpStatus.OK.value(), responseData);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/service/submit")
