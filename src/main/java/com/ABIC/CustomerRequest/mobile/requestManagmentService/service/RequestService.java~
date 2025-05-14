@@ -242,35 +242,25 @@ public class RequestService {
 
     public List<ServiceType> getAllServiceTypes() {return serviceTypeRepository.findAll();}
 
-    public String submitTemplateForm(TemplateSubmissionDTO submissionDTO, String sessionId, String customerNumber) {
-        if (submissionDTO.getValues() == null || submissionDTO.getValues().isEmpty()) {
-            throw new BusinessException("No values provided in the submission");
-        }
+    public String submitTemplateForm(TemplateSubmissionDTO submissionDTO,String sessionId,String customerNumber) {
 
-        try {
-            for (FieldValueDTO dto : submissionDTO.getValues()) {
-                TemplateField field = serviceManagementService.getTemplateFieldById(dto.getFieldId());
+        for (FieldValueDTO dto : submissionDTO.getValues()) {
+            TemplateField field = serviceManagementService.getTemplateFieldById(dto.getFieldId());
 
-                if (field == null) {
-                    throw new ResourceNotFoundException("Template Field", "id", dto.getFieldId());
-                }
-
-                TemplateFieldValue value = new TemplateFieldValue();
-                value.setField(field);
-                value.setGroupId(submissionDTO.getGroupId());
-                value.setValue(dto.getValue());
-                value.setSessionId(sessionId);
-                value.setCustomerNumber(customerNumber);
-                templateFieldValueRepository.save(value);
+            if (field == null) {
+                throw new RuntimeException("Field not found: " + dto.getFieldId());
             }
 
-            return "submitted successfully";
-        } catch (ResourceNotFoundException e) {
-            throw e;
-        } catch (Exception e) {
-            logger.error("Error submitting template form: {}", e.getMessage());
-            throw new BusinessException("Failed to submit template form: " + e.getMessage(), e);
+            TemplateFieldValue value = new TemplateFieldValue();
+            value.setField(field);
+            value.setGroupId(submissionDTO.getGroupId());
+            value.setValue(dto.getValue());
+            value.setSessionId(sessionId);
+            value.setCustomerNumber(customerNumber);
+            templateFieldValueRepository.save(value);
         }
+
+        return "submitted successfully";
     }
 
 

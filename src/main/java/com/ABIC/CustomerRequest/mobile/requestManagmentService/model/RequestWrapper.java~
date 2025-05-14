@@ -7,10 +7,6 @@ import lombok.Data;
 
 @Data
 public class RequestWrapper {
-    @NotNull(message = "Validation request cannot be null")
     private ValidateRequest validateRequest;
-
-    @NotNull(message = "Request data cannot be null")
-    @Valid
     private AddRequestDTO addRequestDTO;
 }

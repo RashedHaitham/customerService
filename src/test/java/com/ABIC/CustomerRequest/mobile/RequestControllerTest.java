@@ -1,17 +1,27 @@
 package com.ABIC.CustomerRequest.mobile;
 
+import com.ABIC.CustomerRequest.exception.BusinessException;
+import com.ABIC.CustomerRequest.exception.ResourceNotFoundException;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.controller.RequestController;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.Request;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.RequestWrapper;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.ValidateRequest;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.AddRequestDTO;
+import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.dto.RequestResponseDTO;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.service.RequestService;
 import com.ABIC.CustomerRequest.util.PaginatedResponse;
 import com.ABIC.CustomerRequest.util.Response;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.ServiceType;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.Services;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.TemplateFieldDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.TemplateSubmissionDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementService;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.http.HttpStatus;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,12 +53,12 @@ class RequestControllerTest {
 
     @Test
     void testGetAllRequestsWithoutStatus() {
-        Page<Request> mockPage = new PageImpl<>(List.of(new Request()));
+        Page<RequestResponseDTO> mockPage = new PageImpl<>(List.of(new RequestResponseDTO()));
         when(requestService.getAllRequests(eq("1234"), any(Pageable.class)))
                 .thenReturn(mockPage);
 
-        ResponseEntity<Response<PaginatedResponse<Request>>> response = requestController.getAllRequests(
-                "session","client","channel","service", "1234", null, 0, 10);
+        ResponseEntity<Response<PaginatedResponse<RequestResponseDTO>>> response = requestController.getAllRequests(
+                "session","client","34","service", "1234", null, 0, 10);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertFalse(response.getBody().getData().getContent().isEmpty());
@@ -57,12 +67,12 @@ class RequestControllerTest {
     @Test
     void testGetAllRequestsWithStatus() {
         Request.Status status = Request.Status.PENDING;
-        Page<Request> mockPage = new PageImpl<>(List.of(new Request()));
-        when(requestService.getRequestsByStatus(eq(status), any(Pageable.class)))
+        Page<RequestResponseDTO> mockPage = new PageImpl<>(List.of(new RequestResponseDTO()));
+        when(requestService.findByStatusAndCustomerNumber(eq(status), eq("user"), any(Pageable.class)))
                 .thenReturn(mockPage);
 
-        ResponseEntity<Response<PaginatedResponse<Request>>> response = requestController.getAllRequests(
-                "session", "1234","channel","id", "user",status, 0, 10);
+        ResponseEntity<Response<PaginatedResponse<RequestResponseDTO>>> response = requestController.getAllRequests(
+                "session", "1234","34","id", "user",status, 0, 10);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertFalse(response.getBody().getData().getContent().isEmpty());
@@ -86,10 +96,13 @@ class RequestControllerTest {
     void testCreateRequestWithInvalidChannel() {
         RequestWrapper wrapper = getSampleRequestWrapper("99");
 
-        ResponseEntity<Response<String>> response = requestController.createRequest(wrapper);
+        // When creating a request with an invalid channel ID, a BusinessException should be thrown
+        BusinessException exception = assertThrows(BusinessException.class, () -> {
+            requestController.createRequest(wrapper);
+        });
 
-        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
-        assertEquals("Invalid Channel-Id", response.getBody().getData());
+        // Verify the exception message
+        assertEquals("Invalid Channel-Id: 99", exception.getMessage());
     }
 
 
@@ -98,10 +111,10 @@ class RequestControllerTest {
         List<ServiceType> types = List.of(new ServiceType());
         when(requestService.getAllServiceTypes()).thenReturn(types);
 
-        ResponseEntity<Map<String, Object>> response = requestController.getServiceTypes();
+        ResponseEntity<Response<List<ServiceType>>> response = requestController.getServiceTypes();
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(types, response.getBody().get("data"));
+        assertEquals(types, response.getBody().getData());
     }
 
     @Test
@@ -121,10 +134,119 @@ class RequestControllerTest {
         TemplateSubmissionDTO dto = new TemplateSubmissionDTO();
         when(requestService.submitTemplateForm(dto,"TRS052029221407438700594511285f","1234")).thenReturn("SUB123");
 
-        ResponseEntity<String> response = requestController.submitForm(dto,"TRS052029221407438700594511285f");
+        ResponseEntity<Response<String>> response = requestController.submitForm(dto,"TRS052029221407438700594511285f");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(response.getBody().contains("SUB123"));
+        assertTrue(response.getBody().getData().contains("SUB123"));
+    }
+
+    @Test
+    void testValidationAnnotationsOnAddRequestDTO() {
+        // This test verifies that the AddRequestDTO class has the expected validation annotations
+
+        // Get the class
+        Class<AddRequestDTO> clazz = AddRequestDTO.class;
+
+        // Check for @NotBlank on description field
+        try {
+            java.lang.reflect.Field descriptionField = clazz.getDeclaredField("description");
+            NotBlank notBlankAnnotation = descriptionField.getAnnotation(NotBlank.class);
+            assertNotNull(notBlankAnnotation, "description field should have @NotBlank annotation");
+        } catch (NoSuchFieldException e) {
+            fail("description field not found in AddRequestDTO");
+        }
+
+        // Check for @NotNull on serviceId field
+        try {
+            java.lang.reflect.Field serviceIdField = clazz.getDeclaredField("serviceId");
+            NotNull notNullAnnotation = serviceIdField.getAnnotation(NotNull.class);
+            assertNotNull(notNullAnnotation, "serviceId field should have @NotNull annotation");
+        } catch (NoSuchFieldException e) {
+            fail("serviceId field not found in AddRequestDTO");
+        }
+
+        // Check for @NotBlank on customerNumber field
+        try {
+            java.lang.reflect.Field customerNumberField = clazz.getDeclaredField("customerNumber");
+            NotBlank notBlankAnnotation = customerNumberField.getAnnotation(NotBlank.class);
+            assertNotNull(notBlankAnnotation, "customerNumber field should have @NotBlank annotation");
+        } catch (NoSuchFieldException e) {
+            fail("customerNumber field not found in AddRequestDTO");
+        }
+
+        // Check for @NotBlank on requestedBy field
+        try {
+            java.lang.reflect.Field requestedByField = clazz.getDeclaredField("requestedBy");
+            NotBlank notBlankAnnotation = requestedByField.getAnnotation(NotBlank.class);
+            assertNotNull(notBlankAnnotation, "requestedBy field should have @NotBlank annotation");
+        } catch (NoSuchFieldException e) {
+            fail("requestedBy field not found in AddRequestDTO");
+        }
+    }
+
+    @Test
+    void testResourceNotFoundExceptionHandling() {
+        RequestWrapper wrapper = getSampleRequestWrapper("34");
+
+        when(requestService.saveRequest(any(), any(), any(), any()))
+                .thenThrow(new ResourceNotFoundException("Service", "id", 999L));
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            requestController.createRequest(wrapper);
+        });
+    }
+
+    @Test
+    void testBusinessExceptionHandling() {
+        RequestWrapper wrapper = getSampleRequestWrapper("34");
+
+        when(requestService.saveRequest(any(), any(), any(), any()))
+                .thenThrow(new BusinessException("Business rule violated"));
+
+        assertThrows(BusinessException.class, () -> {
+            requestController.createRequest(wrapper);
+        });
+    }
+
+    @Test
+    void testGetTemplateFieldsByGroupIdWithEmptyGroupId() {
+        // When group ID is empty, a BusinessException should be thrown
+        assertThrows(BusinessException.class, () -> {
+            requestController.getTemplateFieldsByGroupId("");
+        });
+    }
+
+    @Test
+    void testGetTemplateFieldsByGroupId() {
+        // Arrange
+        String groupId = "test-group-id";
+        List<TemplateFieldDTO> mockTemplateFields = List.of(
+            new TemplateFieldDTO(
+                1L, 
+                "Test Field EN", 
+                "Test Field AR", 
+                "text", 
+                true, 
+                false, 
+                1, 
+                "Placeholder EN", 
+                "Placeholder AR", 
+                List.of("Option 1", "Option 2"), 
+                List.of("خيار 1", "خيار 2")
+            )
+        );
+
+        when(serviceManagementService.getTemplateFieldsByGroupId(groupId)).thenReturn(mockTemplateFields);
+
+        // Act
+        ResponseEntity<Response<List<TemplateFieldDTO>>> response = requestController.getTemplateFieldsByGroupId(groupId);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertNotNull(response.getBody().getData());
+        assertFalse(response.getBody().getData().isEmpty());
+        assertEquals(mockTemplateFields, response.getBody().getData());
     }
 
     private RequestWrapper getSampleRequestWrapper(String channelId) {

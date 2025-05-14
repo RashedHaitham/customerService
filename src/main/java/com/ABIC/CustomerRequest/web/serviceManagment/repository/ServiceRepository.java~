@@ -8,11 +8,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Optional;
-
 public interface ServiceRepository extends JpaRepository<Services, Long> {
 
     @Query("SELECT s FROM Services s WHERE s.status.statusEn = :statusEn")
     Page<Services> findByStatusEn(@Param("statusEn") String statusEn, Pageable pageable);
 
+    void deleteAllByTemplateId(Long templateId);
 }
