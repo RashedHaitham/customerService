@@ -2,6 +2,7 @@ package com.ABIC.CustomerRequest.exception;
 
 import com.ABIC.CustomerRequest.util.Response;
 import com.ABIC.CustomerRequest.util.ResponseUtils;
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,18 +17,14 @@ import org.springframework.web.context.request.WebRequest;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Global exception handler for the application.
- * Provides centralized exception handling across all controllers.
- */
+
 @ControllerAdvice
+@Hidden
 public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    /**
-     * Handle validation exceptions from @Valid annotations
-     */
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Response<Map<String, String>>> handleValidationExceptions(
             MethodArgumentNotValidException ex) {
@@ -45,9 +42,6 @@ public class GlobalExceptionHandler {
                 .body(ResponseUtils.error(HttpStatus.BAD_REQUEST.value(), errors));
     }
 
-    /**
-     * Handle constraint violation exceptions
-     */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Response<Map<String, String>>> handleConstraintViolationException(
             ConstraintViolationException ex) {
@@ -65,9 +59,7 @@ public class GlobalExceptionHandler {
                 .body(ResponseUtils.error(HttpStatus.BAD_REQUEST.value(), errors));
     }
 
-    /**
-     * Handle resource not found exceptions
-     */
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Response<String>> handleResourceNotFoundException(
             ResourceNotFoundException ex, WebRequest request) {
@@ -78,9 +70,7 @@ public class GlobalExceptionHandler {
                 .body(ResponseUtils.error(HttpStatus.NOT_FOUND.value(), ex.getMessage()));
     }
 
-    /**
-     * Handle business logic exceptions
-     */
+
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Response<String>> handleBusinessException(
             BusinessException ex, WebRequest request) {
@@ -91,9 +81,7 @@ public class GlobalExceptionHandler {
                 .body(ResponseUtils.error(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
     }
 
-    /**
-     * Handle all other exceptions
-     */
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Response<String>> handleAllExceptions(
             Exception ex, WebRequest request) {
