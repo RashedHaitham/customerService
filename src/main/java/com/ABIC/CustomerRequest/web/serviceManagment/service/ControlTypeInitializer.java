@@ -47,9 +47,8 @@ public class ControlTypeInitializer {
     private void initServiceStatuses() {
         if (serviceStatusRepository.count() == 0) {
             var statuses = List.of(
-                    new ServiceStatus(null, "Pending", "قيد الانتظار"),
-                    new ServiceStatus(null, "Approved", "تمت الموافقة"),
-                    new ServiceStatus(null, "Rejected", "مرفوض")
+                    new ServiceStatus(null, "Active", "نشط"),
+                    new ServiceStatus(null, "Disabled", "غير نشط")
             );
             serviceStatusRepository.saveAll(statuses);
             System.out.println("Service statuses initialized.");

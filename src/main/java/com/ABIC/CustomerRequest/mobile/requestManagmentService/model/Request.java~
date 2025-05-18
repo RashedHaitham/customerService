@@ -19,11 +19,11 @@ public class Request {
     private String requestNumber;
 
     @Column(nullable = false)
+
     private String description;
     private String requestedBy;
     private String customerNumber;
     private String statusUpdatedBy;
-
     @ManyToOne
     @JoinColumn(name = "service_id", nullable = false)
     private Services service;
