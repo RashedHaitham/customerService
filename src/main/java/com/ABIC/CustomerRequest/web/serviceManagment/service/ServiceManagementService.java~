@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 @Service
 public class ServiceManagementService {
 
+    private static final Logger logger = LoggerFactory.getLogger(ServiceManagementService.class);
+
     private final ServiceRepository serviceRepository;
 
     private final RequestRepository requestRepository;
@@ -351,8 +353,8 @@ public class ServiceManagementService {
                 field.setGroupId(savedTemplate.getGroupId());
                 field.setHidden(false);
 
-                field.setExtraDataEn(dto.getExtraDataEn() != null ? String.join(",", dto.getExtraDataEn()) : null);
-                field.setExtraDataAr(dto.getExtraDataAr() != null ? String.join(",", dto.getExtraDataAr()) : null);
+                field.setExtraDataEn(dto.getExtraDataEn() == null || dto.getExtraDataEn().isEmpty() ? null : String.join(",", dto.getExtraDataEn()));
+                field.setExtraDataAr(dto.getExtraDataAr() == null || dto.getExtraDataAr().isEmpty() ? null : String.join(",", dto.getExtraDataAr()));
 
                 templateFieldRepository.save(field);
             }

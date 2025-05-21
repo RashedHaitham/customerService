@@ -132,9 +132,18 @@ class RequestControllerTest {
     @Test
     void testSubmitForm() {
         TemplateSubmissionDTO dto = new TemplateSubmissionDTO();
+        // Create and set a valid ValidateRequest
+        ValidateRequest validateRequest = new ValidateRequest();
+        validateRequest.setSessionId("TRS052029221407438700594511285f");
+        validateRequest.setUserId("1234");
+        validateRequest.setClientVersion("1.0");
+        validateRequest.setServiceId("service123");
+        validateRequest.setChannelId("channel123");
+        dto.setValidateRequest(validateRequest);
+
         when(requestService.submitTemplateForm(dto,"TRS052029221407438700594511285f","1234")).thenReturn("SUB123");
 
-        ResponseEntity<Response<String>> response = requestController.submitForm(dto,"TRS052029221407438700594511285f");
+        ResponseEntity<Response<String>> response = requestController.submitForm(dto);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(response.getBody().getData().contains("SUB123"));
