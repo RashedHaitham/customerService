@@ -1,8 +1,5 @@
 package com.ABIC.CustomerRequest.web.serviceManagment.service;
 
-import com.ABIC.CustomerRequest.exception.BusinessException;
-import com.ABIC.CustomerRequest.exception.ResourceNotFoundException;
-import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.Request;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.repository.RequestRepository;
 import com.ABIC.CustomerRequest.util.Response;
 import com.ABIC.CustomerRequest.util.ResponseUtils;
@@ -248,27 +245,11 @@ public class ServiceManagementService {
         Template existingTemplate = updateTemplateDetails(optionalTemplate.get(), request);
         templateRepository.save(existingTemplate);
 
-        Map<Long, TemplateField> existingFieldMap = templateFieldRepository.findByGroupId(groupId).stream()
-                .collect(Collectors.toMap(TemplateField::getId, field -> field));
-
-        Set<Long> incomingIds = new HashSet<>();
 
         for (TemplateFieldDTO incomingField : request.getFields()) {
-            //update existing field
-            if (incomingField.getId() != null && existingFieldMap.containsKey(incomingField.getId())) {
-                updateExistingField(existingFieldMap.get(incomingField.getId()), incomingField);
-                incomingIds.add(incomingField.getId());
-            }
-            //create new field
-            else {
-                TemplateField newField = createNewField(incomingField, groupId);
-                templateFieldRepository.save(newField);
-            }
+            TemplateField field = mapToEntity(incomingField, groupId);
+            templateFieldRepository.save(field); // JPA handles update if ID exists, insert if not
         }
-
-        existingFieldMap.keySet().stream()
-                .filter(existingId -> !incomingIds.contains(existingId))
-                .forEach(this::deleteTemplateField);
 
         return true;
     }
@@ -279,43 +260,6 @@ public class ServiceManagementService {
         template.setEnglishDescription(request.getEnglishDescription());
         template.setArabicDescription(request.getArabicDescription());
         return template;
-    }
-
-    private void updateExistingField(TemplateField existingField, TemplateFieldDTO dto) {
-        ControlTypeLookup controlType = controlTypeLookupRepository.findByCode(dto.getControlType())
-                .orElseThrow(() -> new RuntimeException("Invalid control type: " + dto.getControlType()));
-
-        existingField.setLabelEn(dto.getLabelEn());
-        existingField.setLabelAr(dto.getLabelAr());
-        existingField.setControlType(controlType);
-        existingField.setRequired(dto.isRequired());
-        existingField.setAttachment(dto.isAttachment());
-        existingField.setSorting(dto.getSorting());
-        existingField.setPlaceholderEn(dto.getPlaceholderEn());
-        existingField.setPlaceholderAr(dto.getPlaceholderAr());
-        existingField.setExtraDataEn(convertListToString(dto.getExtraDataEn()));
-        existingField.setExtraDataAr(convertListToString(dto.getExtraDataAr()));
-
-        templateFieldRepository.save(existingField);
-    }
-
-    private TemplateField createNewField(TemplateFieldDTO dto, String groupId) {
-        ControlTypeLookup controlType = controlTypeLookupRepository.findByCode(dto.getControlType())
-                .orElseThrow(() -> new RuntimeException("Invalid control type: " + dto.getControlType()));
-
-        TemplateField newField = new TemplateField();
-        newField.setLabelEn(dto.getLabelEn());
-        newField.setLabelAr(dto.getLabelAr());
-        newField.setControlType(controlType);
-        newField.setRequired(dto.isRequired());
-        newField.setAttachment(dto.isAttachment());
-        newField.setSorting(dto.getSorting());
-        newField.setPlaceholderEn(dto.getPlaceholderEn());
-        newField.setPlaceholderAr(dto.getPlaceholderAr());
-        newField.setExtraDataEn(convertListToString(dto.getExtraDataEn()));
-        newField.setExtraDataAr(convertListToString(dto.getExtraDataAr()));
-        newField.setGroupId(groupId);
-        return newField;
     }
 
     @Transactional
@@ -409,6 +353,30 @@ public class ServiceManagementService {
                 service.getSlaTime()
         );
     }
+
+    private TemplateField mapToEntity(TemplateFieldDTO dto, String groupId) {
+        ControlTypeLookup controlType = controlTypeLookupRepository.findByCode(dto.getControlType())
+                .orElseThrow(() -> new RuntimeException("Invalid control type: " + dto.getControlType()));
+
+        TemplateField field = new TemplateField();
+
+        field.setId(dto.getId()); // Will trigger update if ID is present
+        field.setLabelEn(dto.getLabelEn());
+        field.setLabelAr(dto.getLabelAr());
+        field.setControlType(controlType);
+        field.setRequired(dto.isRequired());
+        field.setAttachment(dto.isAttachment());
+        field.setSorting(dto.getSorting());
+        field.setPlaceholderEn(dto.getPlaceholderEn());
+        field.setPlaceholderAr(dto.getPlaceholderAr());
+        field.setExtraDataEn(convertListToString(dto.getExtraDataEn()));
+        field.setExtraDataAr(convertListToString(dto.getExtraDataAr()));
+        field.setGroupId(groupId);
+
+        return field;
+    }
+
+
 
     public Optional<RequestDetailsDTO> getRequestDetails(String requestNumber) {
         return requestRepository.findById(requestNumber)
