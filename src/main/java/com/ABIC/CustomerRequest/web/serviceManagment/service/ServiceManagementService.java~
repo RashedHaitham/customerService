@@ -1,8 +1,5 @@
 package com.ABIC.CustomerRequest.web.serviceManagment.service;
 
-import com.ABIC.CustomerRequest.exception.BusinessException;
-import com.ABIC.CustomerRequest.exception.ResourceNotFoundException;
-import com.ABIC.CustomerRequest.mobile.requestManagmentService.model.Request;
 import com.ABIC.CustomerRequest.mobile.requestManagmentService.repository.RequestRepository;
 import com.ABIC.CustomerRequest.util.Response;
 import com.ABIC.CustomerRequest.util.ResponseUtils;
@@ -57,109 +54,172 @@ public class ServiceManagementService {
     }
 
     public void createService(ServiceDTO dto) {
-        ServiceType serviceType = serviceTypeRepository.findById(dto.getServiceTypeId())
-                .orElseThrow(() -> new RuntimeException("Service Type not found"));
+        logger.info("Creating new service with name: {}", dto.getEnglishName());
+        try {
+            ServiceType serviceType = serviceTypeRepository.findById(dto.getServiceTypeId())
+                    .orElseThrow(() -> new RuntimeException("Service Type not found"));
 
-        ServiceStatus status = serviceStatusRepository.findById(dto.getStatusId())
-                .orElseThrow(() -> new RuntimeException("Status not found"));
+            ServiceStatus status = serviceStatusRepository.findById(dto.getStatusId())
+                    .orElseThrow(() -> new RuntimeException("Status not found"));
 
-        Template template = templateRepository.findById(dto.getTemplateId())
-                .orElseThrow(() -> new RuntimeException("Template not found"));
+            Template template = templateRepository.findById(dto.getTemplateId())
+                    .orElseThrow(() -> new RuntimeException("Template not found"));
 
-        Services service = new Services();
-        service.setArabicName(dto.getArabicName());
-        service.setEnglishName(dto.getEnglishName());
-        service.setDescription(dto.getDescription());
-        service.setArabicDescription(dto.getArabicDescription());
-        service.setServiceType(serviceType);
-        service.setStatus(status);
-        service.setTemplate(template);
-        service.setSlaTime(dto.getSlaTime());
+            Services service = new Services();
+            service.setArabicName(dto.getArabicName());
+            service.setEnglishName(dto.getEnglishName());
+            service.setDescription(dto.getDescription());
+            service.setArabicDescription(dto.getArabicDescription());
+            service.setServiceType(serviceType);
+            service.setStatus(status);
+            service.setTemplate(template);
+            service.setSlaTime(dto.getSlaTime());
 
-        serviceRepository.save(service);
+            serviceRepository.save(service);
+            logger.info("Service created successfully with name: {}", dto.getEnglishName());
+        } catch (Exception e) {
+            logger.error("Error creating service: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     public void updateService(Long serviceId, ServiceDTO service) {
-        Services existingService = serviceRepository.findById(serviceId)
-                .orElseThrow(() -> new RuntimeException("Service not found with ID: " + serviceId));
+        logger.info("Updating service with ID: {}", serviceId);
+        try {
+            Services existingService = serviceRepository.findById(serviceId)
+                    .orElseThrow(() -> new RuntimeException("Service not found with ID: " + serviceId));
 
-        ServiceType serviceType = serviceTypeRepository.findById(service.getServiceTypeId())
-                .orElseThrow(() -> new RuntimeException("Service Type not found with ID: " + service.getServiceTypeId()));
+            ServiceType serviceType = serviceTypeRepository.findById(service.getServiceTypeId())
+                    .orElseThrow(() -> new RuntimeException("Service Type not found with ID: " + service.getServiceTypeId()));
 
-        ServiceStatus status = serviceStatusRepository.findById(service.getStatusId())
-                .orElseThrow(() -> new RuntimeException("Status not found with ID: " + service.getStatusId()));
+            ServiceStatus status = serviceStatusRepository.findById(service.getStatusId())
+                    .orElseThrow(() -> new RuntimeException("Status not found with ID: " + service.getStatusId()));
 
-        existingService.setArabicName(service.getArabicName());
-        existingService.setEnglishName(service.getEnglishName());
+            existingService.setArabicName(service.getArabicName());
+            existingService.setEnglishName(service.getEnglishName());
 
-        existingService.setStatus(status);
-        existingService.setServiceType(serviceType);
+            existingService.setStatus(status);
+            existingService.setServiceType(serviceType);
 
-        existingService.setDescription(service.getDescription());
-        existingService.setArabicDescription(service.getArabicDescription());
+            existingService.setDescription(service.getDescription());
+            existingService.setArabicDescription(service.getArabicDescription());
 
-        existingService.setSlaTime(service.getSlaTime());
+            existingService.setSlaTime(service.getSlaTime());
 
 
-        Template template = templateRepository.findById(service.getTemplateId())
-                .orElseThrow(() -> new RuntimeException("Template not found"));
+            Template template = templateRepository.findById(service.getTemplateId())
+                    .orElseThrow(() -> new RuntimeException("Template not found"));
 
-        existingService.setTemplate(template);
+            existingService.setTemplate(template);
 
-        serviceRepository.save(existingService);
+            serviceRepository.save(existingService);
+            logger.info("Service with ID: {} updated successfully", serviceId);
+        } catch (Exception e) {
+            logger.error("Error updating service with ID {}: {}", serviceId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     public TemplateField getTemplateFieldById(Long id) {
+        logger.info("Fetching template field by ID: {}", id);
         try {
-            return templateFieldRepository.findById(id).orElse(null);
+            TemplateField field = templateFieldRepository.findById(id).orElse(null);
+            if (field != null) {
+                logger.info("Template field found with ID: {}", id);
+            } else {
+                logger.info("No template field found with ID: {}", id);
+            }
+            return field;
         } catch (Exception e) {
-            System.err.println("Error fetching template field by ID: " + e.getMessage());
+            logger.error("Error fetching template field by ID {}: {}", id, e.getMessage(), e);
             return null;
         }
     }
 
     public Page<Services> getAllServices(Pageable pageable) {
-        return serviceRepository.findAll(pageable);
+        logger.info("Fetching all services with pagination");
+        try {
+            Page<Services> services = serviceRepository.findAll(pageable);
+            logger.info("Retrieved {} services", services.getTotalElements());
+            return services;
+        } catch (Exception e) {
+            logger.error("Error fetching all services: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     public Page<Services> getServicesByStatus(String status, Pageable pageable) {
-        return serviceRepository.findByStatusEn(status, pageable);
+        logger.info("Fetching services by status: {}", status);
+        try {
+            Page<Services> services = serviceRepository.findByStatusEn(status, pageable);
+            logger.info("Retrieved {} services with status: {}", services.getTotalElements(), status);
+            return services;
+        } catch (Exception e) {
+            logger.error("Error fetching services by status {}: {}", status, e.getMessage(), e);
+            throw e;
+        }
     }
 
     public void toggleServiceVisibility(Long serviceId, Long statusId) {
-        Services service = serviceRepository.findById(serviceId)
-                .orElseThrow(() -> new RuntimeException("Service not found with ID: " + serviceId));
+        logger.info("Toggling service visibility for service ID: {} with status ID: {}", serviceId, statusId);
+        try {
+            Services service = serviceRepository.findById(serviceId)
+                    .orElseThrow(() -> new RuntimeException("Service not found with ID: " + serviceId));
 
-        ServiceStatus status = serviceStatusRepository.findById(statusId)
-                .orElseThrow(() -> new RuntimeException("Status not found with ID: " + statusId));
+            ServiceStatus status = serviceStatusRepository.findById(statusId)
+                    .orElseThrow(() -> new RuntimeException("Status not found with ID: " + statusId));
 
-        service.setStatus(status);
-        serviceRepository.save(service);
-
+            service.setStatus(status);
+            serviceRepository.save(service);
+            logger.info("Service visibility toggled successfully for service ID: {} to status: {}", serviceId, status.getStatusEn());
+        } catch (Exception e) {
+            logger.error("Error toggling service visibility for service ID: {} with status ID: {}: {}", serviceId, statusId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     public List<ServiceStatus> getAllServiceStatuses() {
-        return serviceStatusRepository.findAll();
+        logger.info("Fetching all service statuses");
+        try {
+            List<ServiceStatus> statuses = serviceStatusRepository.findAll();
+            logger.info("Retrieved {} service statuses", statuses.size());
+            return statuses;
+        } catch (Exception e) {
+            logger.error("Error fetching all service statuses: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     public List<ServiceType> getAllServiceTypes() {
-        return serviceTypeRepository.findAll();
+        logger.info("Fetching all service types");
+        try {
+            List<ServiceType> types = serviceTypeRepository.findAll();
+            logger.info("Retrieved {} service types", types.size());
+            return types;
+        } catch (Exception e) {
+            logger.error("Error fetching all service types: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     public List<Template> getAllTemplates() {
+        logger.info("Fetching all non-hidden templates");
         try {
-            return templateRepository.findAllByHiddenIsFalse();
+            List<Template> templates = templateRepository.findAllByHiddenIsFalse();
+            logger.info("Retrieved {} non-hidden templates", templates.size());
+            return templates;
         } catch (Exception e) {
-            System.err.println("Error fetching templates: " + e.getMessage());
+            logger.error("Error fetching templates: {}", e.getMessage(), e);
             return List.of();
         }
     }
 
     public List<TemplateFieldDTO> getTemplateFieldsByGroupId(String groupId) {
+        logger.info("Fetching template fields by group ID: {}", groupId);
         try {
             List<TemplateField> fields = templateFieldRepository.findByGroupIdAndHiddenIsFalse(groupId);
 
-            return fields.stream()
+            List<TemplateFieldDTO> fieldDTOs = fields.stream()
                     .map(field -> new TemplateFieldDTO(
                             null,
                             field.getLabelEn(),
@@ -175,135 +235,177 @@ public class ServiceManagementService {
                     ))
                     .collect(Collectors.toList());
 
-
+            logger.info("Retrieved {} template fields for group ID: {}", fieldDTOs.size(), groupId);
+            return fieldDTOs;
         } catch (Exception e) {
-            System.err.println("Error fetching template fields by group ID: " + e.getMessage());
+            logger.error("Error fetching template fields by group ID {}: {}", groupId, e.getMessage(), e);
             return List.of();
         }
     }
 
     public Page<TemplateFieldValue> getSubmissionsByCustomerNumber(String customerNumber, Pageable pageable) {
-        return templateFieldValueRepository.getAllByCustomerNumber(customerNumber, pageable);
+        logger.info("Fetching submissions by customer number: {}", customerNumber);
+        try {
+            Page<TemplateFieldValue> submissions = templateFieldValueRepository.getAllByCustomerNumber(customerNumber, pageable);
+            logger.info("Retrieved {} submissions for customer number: {}", submissions.getTotalElements(), customerNumber);
+            return submissions;
+        } catch (Exception e) {
+            logger.error("Error fetching submissions for customer number {}: {}", customerNumber, e.getMessage(), e);
+            throw e;
+        }
     }
 
     public Optional<List<TemplateField>> getAllTemplateFields(String groupId) {
+        logger.info("Fetching all template fields for group ID: {}", groupId);
         try {
             List<TemplateField> fields = templateFieldRepository.findByGroupIdAndHiddenIsFalse(groupId);
+            if (fields != null && !fields.isEmpty()) {
+                logger.info("Retrieved {} template fields for group ID: {}", fields.size(), groupId);
+            } else {
+                logger.info("No template fields found for group ID: {}", groupId);
+            }
             return Optional.ofNullable(fields);
         } catch (Exception e) {
-            System.err.println("Error fetching template: " + e.getMessage());
+            logger.error("Error fetching template fields for group ID {}: {}", groupId, e.getMessage(), e);
             return Optional.empty();
         }
     }
 
     public void deleteTemplate(String templateGroupId) {
-        triggerTemplate(templateGroupId,true);
+        logger.info("Deleting template with group ID: {}", templateGroupId);
+        try {
+            triggerTemplate(templateGroupId, true);
+            logger.info("Template with group ID: {} deleted successfully", templateGroupId);
+        } catch (Exception e) {
+            logger.error("Error deleting template with group ID {}: {}", templateGroupId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     public void restoreTemplate(String templateGroupId) {
-        triggerTemplate(templateGroupId,false);
+        logger.info("Restoring template with group ID: {}", templateGroupId);
+        try {
+            triggerTemplate(templateGroupId, false);
+            logger.info("Template with group ID: {} restored successfully", templateGroupId);
+        } catch (Exception e) {
+            logger.error("Error restoring template with group ID {}: {}", templateGroupId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     private void triggerTemplate(String templateGroupId, boolean hidden) {
-        Template template = templateRepository.findByGroupId(templateGroupId)
-                .orElseThrow(() -> new EntityNotFoundException("Template not found with groupId: " + templateGroupId));
+        logger.debug("Triggering template with group ID: {} to hidden: {}", templateGroupId, hidden);
+        try {
+            Template template = templateRepository.findByGroupId(templateGroupId)
+                    .orElseThrow(() -> new EntityNotFoundException("Template not found with groupId: " + templateGroupId));
 
-        List<TemplateField> fields = templateFieldRepository.findByGroupIdAndHiddenIsFalse(templateGroupId);
+            List<TemplateField> fields = templateFieldRepository.findByGroupIdAndHiddenIsFalse(templateGroupId);
+            logger.debug("Found {} fields for template group ID: {}", fields.size(), templateGroupId);
 
-        for (TemplateField field : fields) {
-            field.setHidden(hidden);
+            for (TemplateField field : fields) {
+                field.setHidden(hidden);
+            }
+
+            template.setHidden(hidden);
+
+            templateRepository.save(template);
+            templateFieldRepository.saveAll(fields);
+            logger.debug("Template and {} fields updated with hidden: {}", fields.size(), hidden);
+        } catch (Exception e) {
+            logger.error("Error in triggerTemplate for group ID {}: {}", templateGroupId, e.getMessage(), e);
+            throw e;
         }
-
-        template.setHidden(hidden);
-
-        templateRepository.save(template);
-        templateFieldRepository.saveAll(fields);
     }
 
     public void deleteTemplateField(Long fieldId) {
-        triggerTemplateField(fieldId,true);
+        logger.info("Deleting template field with ID: {}", fieldId);
+        try {
+            triggerTemplateField(fieldId, true);
+            logger.info("Template field with ID: {} deleted successfully", fieldId);
+        } catch (Exception e) {
+            logger.error("Error deleting template field with ID {}: {}", fieldId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     public void restoreTemplateField(Long fieldId) {
-        triggerTemplateField(fieldId,false);
+        logger.info("Restoring template field with ID: {}", fieldId);
+        try {
+            triggerTemplateField(fieldId, false);
+            logger.info("Template field with ID: {} restored successfully", fieldId);
+        } catch (Exception e) {
+            logger.error("Error restoring template field with ID {}: {}", fieldId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     private void triggerTemplateField(Long fieldId, boolean hidden) {
-        templateFieldRepository.findById(fieldId).ifPresentOrElse(field -> {
-            field.setHidden(hidden);
-            templateFieldRepository.save(field);
-        }, () -> {
-            throw new EntityNotFoundException("Template field not found with ID: " + fieldId);
-        });
+        logger.debug("Triggering template field with ID: {} to hidden: {}", fieldId, hidden);
+        try {
+            templateFieldRepository.findById(fieldId).ifPresentOrElse(field -> {
+                field.setHidden(hidden);
+                templateFieldRepository.save(field);
+                logger.debug("Template field with ID: {} updated with hidden: {}", fieldId, hidden);
+            }, () -> {
+                logger.error("Template field not found with ID: {}", fieldId);
+                throw new EntityNotFoundException("Template field not found with ID: " + fieldId);
+            });
+        } catch (EntityNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error in triggerTemplateField for field ID {}: {}", fieldId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     @Transactional
     public boolean updateTemplate(String groupId, UpdateTemplateWithFieldsRequestDTO request) {
-        Optional<Template> optionalTemplate = templateRepository.findByGroupId(groupId);
+        logger.info("Updating template with group ID: {}", groupId);
+        try {
+            Optional<Template> optionalTemplate = templateRepository.findByGroupId(groupId);
 
-        if (optionalTemplate.isEmpty()) {
-            return false;
+            if (optionalTemplate.isEmpty()) {
+                logger.warn("Template not found with group ID: {}", groupId);
+                return false;
+            }
+
+            Template existingTemplate = updateTemplateDetails(optionalTemplate.get(), request);
+            templateRepository.save(existingTemplate);
+            logger.debug("Template details updated for group ID: {}", groupId);
+
+            int fieldCount = 0;
+            for (TemplateFieldDTO incomingField : request.getFields()) {
+                TemplateField field = mapToEntity(incomingField, groupId);
+                templateFieldRepository.save(field); // JPA handles update if ID exists, insert if not
+                fieldCount++;
+            }
+
+            logger.info("Template with group ID: {} updated successfully with {} fields", groupId, fieldCount);
+            return true;
+        } catch (Exception e) {
+            logger.error("Error updating template with group ID {}: {}", groupId, e.getMessage(), e);
+            throw e;
         }
-
-        Template existingTemplate = updateTemplateDetails(optionalTemplate.get(), request);
-        templateRepository.save(existingTemplate);
-
-
-        for (TemplateFieldDTO incomingField : request.getFields()) {
-            TemplateField field = mapToEntity(incomingField, groupId);
-            templateFieldRepository.save(field); // JPA handles update if ID exists, insert if not
-        }
-
-        return true;
     }
 
     private Template updateTemplateDetails(Template template, UpdateTemplateWithFieldsRequestDTO request) {
-        template.setEnglishName(request.getEnglishName());
-        template.setArabicName(request.getArabicName());
-        template.setEnglishDescription(request.getEnglishDescription());
-        template.setArabicDescription(request.getArabicDescription());
-        return template;
-    }
-
-    private void updateExistingField(TemplateField existingField, TemplateFieldDTO dto) {
-        ControlTypeLookup controlType = controlTypeLookupRepository.findByCode(dto.getControlType())
-                .orElseThrow(() -> new RuntimeException("Invalid control type: " + dto.getControlType()));
-
-        existingField.setLabelEn(dto.getLabelEn());
-        existingField.setLabelAr(dto.getLabelAr());
-        existingField.setControlType(controlType);
-        existingField.setRequired(dto.isRequired());
-        existingField.setAttachment(dto.isAttachment());
-        existingField.setSorting(dto.getSorting());
-        existingField.setPlaceholderEn(dto.getPlaceholderEn());
-        existingField.setPlaceholderAr(dto.getPlaceholderAr());
-        existingField.setExtraDataEn(convertListToString(dto.getExtraDataEn()));
-        existingField.setExtraDataAr(convertListToString(dto.getExtraDataAr()));
-
-        templateFieldRepository.save(existingField);
-    }
-
-    private TemplateField createNewField(TemplateFieldDTO dto, String groupId) {
-        ControlTypeLookup controlType = controlTypeLookupRepository.findByCode(dto.getControlType())
-                .orElseThrow(() -> new RuntimeException("Invalid control type: " + dto.getControlType()));
-
-        TemplateField newField = new TemplateField();
-        newField.setLabelEn(dto.getLabelEn());
-        newField.setLabelAr(dto.getLabelAr());
-        newField.setControlType(controlType);
-        newField.setRequired(dto.isRequired());
-        newField.setAttachment(dto.isAttachment());
-        newField.setSorting(dto.getSorting());
-        newField.setPlaceholderEn(dto.getPlaceholderEn());
-        newField.setPlaceholderAr(dto.getPlaceholderAr());
-        newField.setExtraDataEn(convertListToString(dto.getExtraDataEn()));
-        newField.setExtraDataAr(convertListToString(dto.getExtraDataAr()));
-        newField.setGroupId(groupId);
-        return newField;
+        logger.debug("Updating template details for template ID: {}", template.getId());
+        try {
+            template.setEnglishName(request.getEnglishName());
+            template.setArabicName(request.getArabicName());
+            template.setEnglishDescription(request.getEnglishDescription());
+            template.setArabicDescription(request.getArabicDescription());
+            logger.debug("Template details updated successfully for template ID: {}", template.getId());
+            return template;
+        } catch (Exception e) {
+            logger.error("Error updating template details for template ID {}: {}", template.getId(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     @Transactional
     public Response<String> createTemplateWithFields(CreateTemplateWithFieldsRequestDTO request) {
+        logger.info("Creating new template with fields. Template name: {}", request.getEnglishName());
         try {
             // Save the template
             Template template = new Template();
@@ -313,17 +415,24 @@ public class ServiceManagementService {
             template.setArabicDescription(request.getArabicDescription());
             template.setGroupId(UUID.randomUUID().toString());
 
+            logger.debug("Saving template with name: {}", request.getEnglishName());
             Template savedTemplate = templateRepository.save(template);
+            logger.debug("Template saved with ID: {} and group ID: {}", savedTemplate.getId(), savedTemplate.getGroupId());
 
+            int fieldCount = 0;
             for (TemplateFieldDTO dto : request.getFields()) {
-
                 String controlTypeCode = dto.getControlType();
                 if (controlTypeCode == null || controlTypeCode.isBlank()) {
+                    logger.error("ControlType code is required for field: {}", dto.getLabelEn());
                     throw new RuntimeException("ControlType code is required for all fields.");
                 }
 
+                logger.debug("Finding control type with code: {}", controlTypeCode);
                 ControlTypeLookup controlType = controlTypeLookupRepository.findByCode(controlTypeCode)
-                        .orElseThrow(() -> new RuntimeException("ControlType with code [" + controlTypeCode + "] not found"));
+                        .orElseThrow(() -> {
+                            logger.error("ControlType with code [{}] not found", controlTypeCode);
+                            return new RuntimeException("ControlType with code [" + controlTypeCode + "] not found");
+                        });
 
                 TemplateField field = new TemplateField();
                 field.setLabelEn(dto.getLabelEn());
@@ -340,120 +449,170 @@ public class ServiceManagementService {
                 field.setExtraDataEn(dto.getExtraDataEn() != null ? String.join(",", dto.getExtraDataEn()) : null);
                 field.setExtraDataAr(dto.getExtraDataAr() != null ? String.join(",", dto.getExtraDataAr()) : null);
 
+                logger.debug("Saving template field: {}", field.getLabelEn());
                 templateFieldRepository.save(field);
+                fieldCount++;
             }
 
+            logger.info("Template created successfully with name: {}, group ID: {}, and {} fields", 
+                    savedTemplate.getEnglishName(), savedTemplate.getGroupId(), fieldCount);
             return ResponseUtils.success(HttpStatus.CREATED.value(), "Template and fields created successfully with group id "+savedTemplate.getGroupId());
 
         } catch (Exception e) {
+            logger.error("Failed to create template: {}", e.getMessage(), e);
             return ResponseUtils.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed to create template: " + e.getMessage());
         }
     }
 
     public Optional<List<ControlTypeLookup>> getControlTypes() {
+        logger.info("Fetching all control types");
         try {
-            return Optional.of(controlTypeLookupRepository.findAll());
+            List<ControlTypeLookup> controlTypes = controlTypeLookupRepository.findAll();
+            logger.info("Retrieved {} control types", controlTypes.size());
+            return Optional.of(controlTypes);
         } catch (Exception e) {
-            System.err.println("Error fetching control types: " + e.getMessage());
+            logger.error("Error fetching control types: {}", e.getMessage(), e);
             return Optional.empty();
         }
     }
 
     public Page<ServiceResponseDTO> getAllServiceDTOs(Pageable pageable) {
-        Page<Services> servicesPage = serviceRepository.findAll(pageable);
-        return servicesPage.map(this::mapToDTO);
+        logger.info("Fetching all service DTOs with pagination");
+        try {
+            Page<Services> servicesPage = serviceRepository.findAll(pageable);
+            Page<ServiceResponseDTO> dtoPage = servicesPage.map(this::mapToDTO);
+            logger.info("Retrieved {} service DTOs", dtoPage.getTotalElements());
+            return dtoPage;
+        } catch (Exception e) {
+            logger.error("Error fetching all service DTOs: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     private ServiceResponseDTO mapToDTO(Services service) {
-        Template template = service.getTemplate();
-        ServiceType serviceType = service.getServiceType();
-        ServiceStatus status = service.getStatus();
+        logger.debug("Mapping service with ID: {} to DTO", service.getId());
+        try {
+            Template template = service.getTemplate();
+            ServiceType serviceType = service.getServiceType();
+            ServiceStatus status = service.getStatus();
 
-        return new ServiceResponseDTO(
-                service.getId(),
-                service.getArabicName(),
-                service.getEnglishName(),
-                service.getDescription(),
-                service.getArabicDescription(),
+            ServiceResponseDTO dto = new ServiceResponseDTO(
+                    service.getId(),
+                    service.getArabicName(),
+                    service.getEnglishName(),
+                    service.getDescription(),
+                    service.getArabicDescription(),
 
-                template.getId(),
-                template.getGroupId(),
-                template.getEnglishName(),
-                template.getArabicName(),
+                    template.getId(),
+                    template.getGroupId(),
+                    template.getEnglishName(),
+                    template.getArabicName(),
 
-                serviceType.getId(),
-                serviceType.getTypeEn(),
-                serviceType.getTypeAr(),
+                    serviceType.getId(),
+                    serviceType.getTypeEn(),
+                    serviceType.getTypeAr(),
 
+                    status.getId(),
+                    status.getStatusAr(),
+                    status.getStatusEn(),
 
-                status.getId(),
-                status.getStatusAr(),
-                status.getStatusEn(),
-
-                service.getSlaTime()
-        );
+                    service.getSlaTime()
+            );
+            logger.debug("Service with ID: {} mapped to DTO successfully", service.getId());
+            return dto;
+        } catch (Exception e) {
+            logger.error("Error mapping service with ID {} to DTO: {}", service.getId(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     private TemplateField mapToEntity(TemplateFieldDTO dto, String groupId) {
-        ControlTypeLookup controlType = controlTypeLookupRepository.findByCode(dto.getControlType())
-                .orElseThrow(() -> new RuntimeException("Invalid control type: " + dto.getControlType()));
+        logger.debug("Mapping TemplateFieldDTO to entity for field: {} in group: {}", dto.getLabelEn(), groupId);
+        try {
+            ControlTypeLookup controlType = controlTypeLookupRepository.findByCode(dto.getControlType())
+                    .orElseThrow(() -> {
+                        logger.error("Invalid control type: {}", dto.getControlType());
+                        return new RuntimeException("Invalid control type: " + dto.getControlType());
+                    });
 
-        TemplateField field = new TemplateField();
+            TemplateField field = new TemplateField();
 
-        field.setId(dto.getId()); // Will trigger update if ID is present
-        field.setLabelEn(dto.getLabelEn());
-        field.setLabelAr(dto.getLabelAr());
-        field.setControlType(controlType);
-        field.setRequired(dto.isRequired());
-        field.setAttachment(dto.isAttachment());
-        field.setSorting(dto.getSorting());
-        field.setPlaceholderEn(dto.getPlaceholderEn());
-        field.setPlaceholderAr(dto.getPlaceholderAr());
-        field.setExtraDataEn(convertListToString(dto.getExtraDataEn()));
-        field.setExtraDataAr(convertListToString(dto.getExtraDataAr()));
-        field.setGroupId(groupId);
+            field.setId(dto.getId()); // Will trigger update if ID is present
+            field.setLabelEn(dto.getLabelEn());
+            field.setLabelAr(dto.getLabelAr());
+            field.setControlType(controlType);
+            field.setRequired(dto.isRequired());
+            field.setAttachment(dto.isAttachment());
+            field.setSorting(dto.getSorting());
+            field.setPlaceholderEn(dto.getPlaceholderEn());
+            field.setPlaceholderAr(dto.getPlaceholderAr());
+            field.setExtraDataEn(convertListToString(dto.getExtraDataEn()));
+            field.setExtraDataAr(convertListToString(dto.getExtraDataAr()));
+            field.setGroupId(groupId);
 
-        return field;
+            logger.debug("TemplateFieldDTO mapped to entity successfully for field: {}", dto.getLabelEn());
+            return field;
+        } catch (Exception e) {
+            logger.error("Error mapping TemplateFieldDTO to entity for field {}: {}", dto.getLabelEn(), e.getMessage(), e);
+            throw e;
+        }
     }
 
 
 
     public Optional<RequestDetailsDTO> getRequestDetails(String requestNumber) {
-        return requestRepository.findById(requestNumber)
-                .map(request -> {
-                    List<TemplateFieldValue> fieldValues = templateFieldValueRepository
-                            .findByCustomerNumber( request.getCustomerNumber());
+        logger.info("Fetching request details for request number: {}", requestNumber);
+        try {
+            Optional<RequestDetailsDTO> result = requestRepository.findById(requestNumber)
+                    .map(request -> {
+                        logger.debug("Found request with number: {}, fetching field values", requestNumber);
+                        List<TemplateFieldValue> fieldValues = templateFieldValueRepository
+                                .findByCustomerNumber(request.getCustomerNumber());
+                        logger.debug("Retrieved {} field values for customer number: {}", fieldValues.size(), request.getCustomerNumber());
 
-                    List<FieldValueDTO> fields = fieldValues.stream()
-                            .map(fv -> {
-                                TemplateField field = fv.getField();
-                                return new FieldValueDTO(
-                                        field.getId(),
-                                        field.getLabelAr(),
-                                        field.getLabelEn(),
-                                        fv.getValue(),
-                                        convertStringToList(field.getExtraDataEn()),
-                                        convertStringToList(field.getExtraDataAr())
-                                );
-                            })
-                            .collect(Collectors.toList());
+                        List<FieldValueDTO> fields = fieldValues.stream()
+                                .map(fv -> {
+                                    TemplateField field = fv.getField();
+                                    return new FieldValueDTO(
+                                            field.getId(),
+                                            field.getLabelAr(),
+                                            field.getLabelEn(),
+                                            fv.getValue(),
+                                            convertStringToList(field.getExtraDataEn()),
+                                            convertStringToList(field.getExtraDataAr())
+                                    );
+                                })
+                                .collect(Collectors.toList());
 
+                        logger.debug("Mapped {} field values to DTOs", fields.size());
 
+                        RequestDetailsDTO dto = new RequestDetailsDTO(
+                                request.getRequestNumber(),
+                                request.getDescription(),
+                                request.getRequestedBy(),
+                                request.getCustomerNumber(),
+                                request.getStatusUpdatedBy(),
+                                request.getService().getId(),
+                                request.getStatus().name(),
+                                request.getTime(),
+                                request.getSlaTime(),
+                                request.getComment(),
+                                fields
+                        );
 
-                    return new RequestDetailsDTO(
-                            request.getRequestNumber(),
-                            request.getDescription(),
-                            request.getRequestedBy(),
-                            request.getCustomerNumber(),
-                            request.getStatusUpdatedBy(),
-                            request.getService().getId(),
-                            request.getStatus().name(),
-                            request.getTime(),
-                            request.getSlaTime(),
-                            request.getComment(),
-                            fields
-                    );
-                });
+                        logger.info("Request details retrieved successfully for request number: {}", requestNumber);
+                        return dto;
+                    });
+
+            if (result.isEmpty()) {
+                logger.warn("No request found with request number: {}", requestNumber);
+            }
+
+            return result;
+        } catch (Exception e) {
+            logger.error("Error fetching request details for request number {}: {}", requestNumber, e.getMessage(), e);
+            throw e;
+        }
     }
 
     private List<String> convertStringToList(String value) {
