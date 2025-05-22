@@ -188,14 +188,45 @@ public class RequestController {
         }
     }
 
+    @GetMapping("/templateFields/{groupId}")
+    public ResponseEntity<Response<List<TemplateField>>> getAllTemplateFields(@PathVariable String groupId) {
+        try {
+            if (groupId == null || groupId.trim().isEmpty()) {
+                throw new BusinessException("Group ID cannot be empty");
+            }
+
+            Optional<List<TemplateField>> optionalTemplates = serviceManagementService.getAllTemplateFields(groupId);
+
+            if (optionalTemplates.isPresent() && !optionalTemplates.get().isEmpty()) {
+                Response<List<TemplateField>> response = ResponseUtils.success(HttpStatus.OK.value(), optionalTemplates.get());
+                return ResponseEntity.ok(response);
+            } else {
+                throw new ResourceNotFoundException("Template fields", "group ID", groupId);
+            }
+        } catch (ResourceNotFoundException | BusinessException e) {
+            // Let the global exception handler handle these
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error retrieving template fields: {}", e.getMessage());
+            throw new BusinessException("Error retrieving template fields: " + e.getMessage(), e);
+        }
+    }
     @PostMapping("/service/submit")
     public ResponseEntity<Response<String>> submitForm(
-            @Valid @RequestBody TemplateSubmissionDTO submissionDTO,
-            @RequestHeader("sessionId") String sessionId) {
+            @Valid @RequestBody TemplateSubmissionDTO submissionDTO) {
 
-        // userId should be retrieved via sessionId
+//        if (!requestService.validateSession(submissionDTO.getValidateRequest())) {
+//            throw new BusinessException("Invalid session ID");
+//        }
+
         try {
-            String submissionId = requestService.submitTemplateForm(submissionDTO, sessionId, "1234");
+            // Check if validateRequest is null
+            if (submissionDTO.getValidateRequest() == null) {
+                throw new BusinessException("ValidateRequest cannot be null");
+            }
+
+            String submissionId = requestService.submitTemplateForm(submissionDTO,
+                    submissionDTO.getValidateRequest().getSessionId(), submissionDTO.getValidateRequest().getUserId());
             return ResponseEntity.ok(
                     ResponseUtils.success(HttpStatus.OK.value(), "Form submitted successfully. Submission ID: " + submissionId));
         } catch (ResourceNotFoundException | BusinessException e) {

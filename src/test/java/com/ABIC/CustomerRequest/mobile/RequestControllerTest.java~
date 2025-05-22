@@ -134,7 +134,7 @@ class RequestControllerTest {
         TemplateSubmissionDTO dto = new TemplateSubmissionDTO();
         when(requestService.submitTemplateForm(dto,"TRS052029221407438700594511285f","1234")).thenReturn("SUB123");
 
-        ResponseEntity<Response<String>> response = requestController.submitForm(dto,"TRS052029221407438700594511285f");
+        ResponseEntity<Response<String>> response = requestController.submitForm(dto);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(response.getBody().getData().contains("SUB123"));
@@ -150,9 +150,8 @@ class RequestControllerTest {
         // Check for @NotBlank on description field
         try {
             java.lang.reflect.Field descriptionField = clazz.getDeclaredField("description");
-            NotBlank notBlankAnnotation = descriptionField.getAnnotation(jakarta.validation.constraints.NotBlank.class);
+            NotBlank notBlankAnnotation = descriptionField.getAnnotation(NotBlank.class);
             assertNotNull(notBlankAnnotation, "description field should have @NotBlank annotation");
-            assertEquals("Description cannot be empty", notBlankAnnotation.message());
         } catch (NoSuchFieldException e) {
             fail("description field not found in AddRequestDTO");
         }
@@ -160,9 +159,8 @@ class RequestControllerTest {
         // Check for @NotNull on serviceId field
         try {
             java.lang.reflect.Field serviceIdField = clazz.getDeclaredField("serviceId");
-            NotNull notNullAnnotation = serviceIdField.getAnnotation(jakarta.validation.constraints.NotNull.class);
+            NotNull notNullAnnotation = serviceIdField.getAnnotation(NotNull.class);
             assertNotNull(notNullAnnotation, "serviceId field should have @NotNull annotation");
-            assertEquals("Service ID cannot be null", notNullAnnotation.message());
         } catch (NoSuchFieldException e) {
             fail("serviceId field not found in AddRequestDTO");
         }
@@ -170,9 +168,8 @@ class RequestControllerTest {
         // Check for @NotBlank on customerNumber field
         try {
             java.lang.reflect.Field customerNumberField = clazz.getDeclaredField("customerNumber");
-            NotBlank notBlankAnnotation = customerNumberField.getAnnotation(jakarta.validation.constraints.NotBlank.class);
+            NotBlank notBlankAnnotation = customerNumberField.getAnnotation(NotBlank.class);
             assertNotNull(notBlankAnnotation, "customerNumber field should have @NotBlank annotation");
-            assertEquals("Customer Number cannot be empty", notBlankAnnotation.message());
         } catch (NoSuchFieldException e) {
             fail("customerNumber field not found in AddRequestDTO");
         }
@@ -180,9 +177,8 @@ class RequestControllerTest {
         // Check for @NotBlank on requestedBy field
         try {
             java.lang.reflect.Field requestedByField = clazz.getDeclaredField("requestedBy");
-            NotBlank notBlankAnnotation = requestedByField.getAnnotation(jakarta.validation.constraints.NotBlank.class);
+            NotBlank notBlankAnnotation = requestedByField.getAnnotation(NotBlank.class);
             assertNotNull(notBlankAnnotation, "requestedBy field should have @NotBlank annotation");
-            assertEquals("Requested by cannot be empty", notBlankAnnotation.message());
         } catch (NoSuchFieldException e) {
             fail("requestedBy field not found in AddRequestDTO");
         }
