@@ -7,11 +7,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface TemplateFieldRepository extends JpaRepository<TemplateField, Long> {
+
     List<TemplateField> findByGroupIdAndHiddenIsFalse(String groupId);
 
+    List<TemplateField> findByGroupId(String groupId);
 }

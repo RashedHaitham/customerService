@@ -369,14 +369,36 @@ public class ServiceManagementService {
                 return false;
             }
 
+            // Update base template details
             Template existingTemplate = updateTemplateDetails(optionalTemplate.get(), request);
             templateRepository.save(existingTemplate);
             logger.debug("Template details updated for group ID: {}", groupId);
 
+            List<TemplateField> existingFields = templateFieldRepository.findByGroupId(groupId);
+
+                        Set<Long> incomingFieldIds = request.getFields().stream()
+                                .map(TemplateFieldDTO::getId)
+                                .filter(Objects::nonNull)
+                                .map(Long::valueOf)
+                                .collect(Collectors.toSet());
+
+                        List<TemplateField> fieldsToDelete = existingFields.stream()
+                                .filter(f -> !incomingFieldIds.contains(f.getId()))
+                                .collect(Collectors.toList());
+
+
+            if (!fieldsToDelete.isEmpty()) {
+                for (TemplateField field : fieldsToDelete) {
+                    triggerTemplateField(field.getId(), true);
+                }
+                logger.debug("Deleted {} fields for group ID: {}", fieldsToDelete.size(), groupId);
+            }
+
+            // Save or update incoming fields
             int fieldCount = 0;
             for (TemplateFieldDTO incomingField : request.getFields()) {
                 TemplateField field = mapToEntity(incomingField, groupId);
-                templateFieldRepository.save(field); // JPA handles update if ID exists, insert if not
+                templateFieldRepository.save(field); // Insert or update
                 fieldCount++;
             }
 
@@ -387,6 +409,7 @@ public class ServiceManagementService {
             throw e;
         }
     }
+
 
     private Template updateTemplateDetails(Template template, UpdateTemplateWithFieldsRequestDTO request) {
         logger.debug("Updating template details for template ID: {}", template.getId());

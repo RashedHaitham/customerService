@@ -357,6 +357,48 @@ public class ServiceManagementService {
             throw e;
         }
     }
+//
+//    @Transactional
+//    public boolean updateTemplate(String groupId, UpdateTemplateWithFieldsRequestDTO request) {
+//        Optional<Template> optionalTemplate = templateRepository.findByGroupId(groupId);
+//
+//        if (optionalTemplate.isEmpty()) {
+//            return false;
+//        }
+//
+//        Template existingTemplate = updateTemplateDetails(optionalTemplate.get(), request);
+//        templateRepository.save(existingTemplate);
+//
+//        Map<Long, TemplateField> existingFieldMap = templateFieldRepository.findByGroupId(groupId).stream()
+//                .collect(Collectors.toMap(TemplateField::getId, field -> field));
+//
+//        Set<Long> incomingIds = new HashSet<>();
+//
+//        for (TemplateFieldDTO incomingField : request.getFields()) {
+//            //update existing field
+//            if (incomingField.getId() != null && existingFieldMap.containsKey(incomingField.getId())) {
+//                updateExistingField(existingFieldMap.get(incomingField.getId()), incomingField);
+//                incomingIds.add(incomingField.getId());
+//            }
+//            //create new field
+//            else {
+//                TemplateField newField = createNewField(incomingField, groupId);
+//                templateFieldRepository.save(newField);
+//            }
+//        }
+//
+//        existingFieldMap.keySet().stream()
+//                .filter(existingId -> !incomingIds.contains(existingId))
+//                .forEach(this::deleteTemplateField);
+//
+//        return true;
+//    }
+//
+//    private TemplateField createNewField(TemplateFieldDTO incomingField, String groupId) {
+//    }
+//
+//    private void updateExistingField(TemplateField templateField, TemplateFieldDTO incomingField) {
+//    }
 
     @Transactional
     public boolean updateTemplate(String groupId, UpdateTemplateWithFieldsRequestDTO request) {
@@ -369,14 +411,36 @@ public class ServiceManagementService {
                 return false;
             }
 
+            // Update base template details
             Template existingTemplate = updateTemplateDetails(optionalTemplate.get(), request);
             templateRepository.save(existingTemplate);
             logger.debug("Template details updated for group ID: {}", groupId);
 
+            List<TemplateField> existingFields = templateFieldRepository.findByGroupId(groupId);
+
+                        Set<Long> incomingFieldIds = request.getFields().stream()
+                                .map(TemplateFieldDTO::getId)
+                                .filter(Objects::nonNull)
+                                .map(Long::valueOf)
+                                .collect(Collectors.toSet());
+
+                        List<TemplateField> fieldsToDelete = existingFields.stream()
+                                .filter(f -> !incomingFieldIds.contains(f.getId()))
+                                .collect(Collectors.toList());
+
+
+            if (!fieldsToDelete.isEmpty()) {
+                for (TemplateField field : fieldsToDelete) {
+                    triggerTemplateField(field.getId(), true);
+                }
+                logger.debug("Deleted {} fields for group ID: {}", fieldsToDelete.size(), groupId);
+            }
+
+            // Save or update incoming fields
             int fieldCount = 0;
             for (TemplateFieldDTO incomingField : request.getFields()) {
                 TemplateField field = mapToEntity(incomingField, groupId);
-                templateFieldRepository.save(field); // JPA handles update if ID exists, insert if not
+                templateFieldRepository.save(field); // Insert or update
                 fieldCount++;
             }
 
@@ -387,6 +451,7 @@ public class ServiceManagementService {
             throw e;
         }
     }
+
 
     private Template updateTemplateDetails(Template template, UpdateTemplateWithFieldsRequestDTO request) {
         logger.debug("Updating template details for template ID: {}", template.getId());
@@ -616,19 +681,52 @@ public class ServiceManagementService {
     }
 
     private List<String> convertStringToList(String value) {
-        if (value == null || value.isBlank()) return Collections.emptyList();
-        return Arrays.stream(value.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .toList();
+        logger.debug("Converting string to list: {}", value);
+        try {
+            if (value == null || value.isBlank()) {
+                logger.debug("Empty or null string, returning empty list");
+                return Collections.emptyList();
+            }
+            List<String> result = Arrays.stream(value.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+            logger.debug("Converted string to list with {} items", result.size());
+            return result;
+        } catch (Exception e) {
+            logger.error("Error converting string to list: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     private String convertListToString(List<String> list) {
-        return (list == null || list.isEmpty()) ? null : String.join(",", list);
+        logger.debug("Converting list to string, list size: {}", list != null ? list.size() : 0);
+        try {
+            String result = (list == null || list.isEmpty()) ? null : String.join(",", list);
+            logger.debug("Converted list to string: {}", result);
+            return result;
+        } catch (Exception e) {
+            logger.error("Error converting list to string: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     public ServiceResponseDTO getService(Long serviceId) {
-        Services service = serviceRepository.findById(serviceId).orElseThrow();
-        return mapToDTO(service);
+        logger.info("Fetching service with ID: {}", serviceId);
+        try {
+            Services service = serviceRepository.findById(serviceId)
+                    .orElseThrow(() -> {
+                        logger.error("Service not found with ID: {}", serviceId);
+                        return new EntityNotFoundException("Service not found with ID: " + serviceId);
+                    });
+            ServiceResponseDTO dto = mapToDTO(service);
+            logger.info("Service with ID: {} fetched successfully", serviceId);
+            return dto;
+        } catch (EntityNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error fetching service with ID {}: {}", serviceId, e.getMessage(), e);
+            throw e;
+        }
     }
 }
