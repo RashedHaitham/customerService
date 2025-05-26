@@ -424,10 +424,7 @@ class ServiceManagementServiceTest {
         assertEquals("Updated Template", existingTemplate.getEnglishName());
         assertEquals("قالب محدث", existingTemplate.getArabicName());
 
-        // Verify fields were saved
-        verify(templateFieldRepository, times(2)).save(any(TemplateField.class));
-
-        // Instead of trying to match specific field instances, just verify the correct number of saves
+        // Verify fields were saved - exactly 2 fields should be saved
         verify(templateFieldRepository, times(2)).save(any(TemplateField.class));
     }
 

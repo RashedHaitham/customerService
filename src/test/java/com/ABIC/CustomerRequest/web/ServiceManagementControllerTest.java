@@ -311,14 +311,26 @@ public class ServiceManagementControllerTest {
     }
 
     @Test
-    void testGetAllTemplates() throws Exception {
-        Mockito.when(serviceManagementService.getAllTemplates())
-                .thenReturn(List.of(new Template()));
+    void testGetAllTemplatesWithPagination() throws Exception {
+        // Arrange: create a page of templates
+        Template template = new Template();
+        template.setId(1L);
+        template.setEnglishName("Test Template");
 
-        mockMvc.perform(get("/api/services/templates"))
+        Page<Template> templatePage = new PageImpl<>(List.of(template));
+
+        Mockito.when(serviceManagementService.getAllTemplates(0, 10))
+                .thenReturn(templatePage);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/services/templates")
+                        .param("page", "0")
+                        .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].englishName").value("Test Template"));
     }
+
 
     @Test
     void testGetAllSubs() throws Exception {

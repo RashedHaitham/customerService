@@ -12,9 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 
 import java.util.*;
@@ -205,7 +203,7 @@ class ServiceManagementServiceTest {
     }
 
     @Test
-    void testGetAllTemplates() {
+    void testGetAllTemplatesWithPagination() {
         // Arrange
         List<Template> templates = new ArrayList<>();
         Template template1 = new Template();
@@ -218,16 +216,20 @@ class ServiceManagementServiceTest {
         template2.setEnglishName("Template 2");
         templates.add(template2);
 
-        when(templateRepository.findAllByHiddenIsFalse()).thenReturn(templates);
+        Page<Template> templatePage = new PageImpl<>(templates);
+
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("id").descending());
+        when(templateRepository.findAllByHiddenIsFalse(pageable)).thenReturn(templatePage);
 
         // Act
-        List<Template> result = serviceManagementService.getAllTemplates();
+        Page<Template> result = serviceManagementService.getAllTemplates(0, 10);
 
         // Assert
-        assertEquals(2, result.size());
-        assertEquals("Template 1", result.get(0).getEnglishName());
-        assertEquals("Template 2", result.get(1).getEnglishName());
+        assertEquals(2, result.getNumberOfElements());
+        assertEquals("Template 1", result.getContent().get(0).getEnglishName());
+        assertEquals("Template 2", result.getContent().get(1).getEnglishName());
     }
+
 
     @Test
     void testCreateTemplateWithFields() {

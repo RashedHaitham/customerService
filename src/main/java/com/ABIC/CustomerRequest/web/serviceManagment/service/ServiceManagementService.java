@@ -10,6 +10,8 @@ import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
@@ -202,17 +204,19 @@ public class ServiceManagementService {
         }
     }
 
-    public List<Template> getAllTemplates() {
-        logger.info("Fetching all non-hidden templates");
+    public Page<Template> getAllTemplates(int page, int size) {
+        logger.info("Fetching page {} of size {} for non-hidden templates", page, size);
         try {
-            List<Template> templates = templateRepository.findAllByHiddenIsFalse();
-            logger.info("Retrieved {} non-hidden templates", templates.size());
+            Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+            Page<Template> templates = templateRepository.findAllByHiddenIsFalse(pageable);
+            logger.info("Retrieved {} templates", templates.getNumberOfElements());
             return templates;
         } catch (Exception e) {
             logger.error("Error fetching templates: {}", e.getMessage(), e);
-            return List.of();
+            return Page.empty();
         }
     }
+
 
     public List<TemplateFieldDTO> getTemplateFieldsByGroupId(String groupId) {
         logger.info("Fetching template fields by group ID: {}", groupId);

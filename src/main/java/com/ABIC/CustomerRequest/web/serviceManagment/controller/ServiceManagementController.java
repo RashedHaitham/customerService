@@ -324,24 +324,27 @@ public class ServiceManagementController {
     }
 
     @GetMapping("/templates")
-    public ResponseEntity<Response<List<Template>>> getAllTemplates() {
+    public ResponseEntity<Response<Page<Template>>> getAllTemplates(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
         try {
-            List<Template> templates = serviceManagementService.getAllTemplates();
+            Page<Template> templates = serviceManagementService.getAllTemplates(page, size);
 
             if (templates.isEmpty()) {
                 logger.warn("No templates found");
             }
 
-            Response<List<Template>> response = ResponseUtils.success(HttpStatus.OK.value(), templates);
+            Response<Page<Template>> response = ResponseUtils.success(HttpStatus.OK.value(), templates);
             return ResponseEntity.ok(response);
         } catch (ResourceNotFoundException | BusinessException e) {
-            // Let the global exception handler handle these
             throw e;
         } catch (Exception e) {
             logger.error("Error retrieving templates: {}", e.getMessage());
             throw new BusinessException("Error retrieving templates: " + e.getMessage(), e);
         }
     }
+
 
     @GetMapping("/templateFields/{groupId}")
     public ResponseEntity<Response<List<TemplateField>>> getAllTemplateFields(@PathVariable String groupId) {

@@ -221,7 +221,7 @@ public class ServiceManagementService {
 
             List<TemplateFieldDTO> fieldDTOs = fields.stream()
                     .map(field -> new TemplateFieldDTO(
-                            null,
+                            field.getId(),
                             field.getLabelEn(),
                             field.getLabelAr(),
                             field.getControlType().getCode(),

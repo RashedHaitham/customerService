@@ -367,6 +367,29 @@ public class ServiceManagementController {
         }
     }
 
+    @GetMapping("/templates/{groupId}")
+    public ResponseEntity<Response<List<TemplateFieldDTO>>> getTemplateFieldsByGroupId(@PathVariable String groupId) {
+        try {
+            if (groupId == null || groupId.trim().isEmpty()) {
+                throw new BusinessException("Group ID cannot be empty");
+            }
+
+            List<TemplateFieldDTO> templates = serviceManagementService.getTemplateFieldsByGroupId(groupId);
+
+            if (templates.isEmpty()) {
+                logger.warn("No template fields found for group ID: {}", groupId);
+            }
+
+            Response<List<TemplateFieldDTO>> response = ResponseUtils.success(HttpStatus.OK.value(), templates);
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException | BusinessException e) {
+            // Let the global exception handler handle these
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error retrieving template fields: {}", e.getMessage());
+            throw new BusinessException("Error retrieving template fields: " + e.getMessage(), e);
+        }
+    }
 
     @GetMapping("/submissions/{customerNumber}")
     public ResponseEntity<Response<Page<TemplateFieldValue>>> getCustomerAllSubs(@PathVariable String customerNumber,

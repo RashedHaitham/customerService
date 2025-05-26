@@ -16,6 +16,7 @@ import com.ABIC.CustomerRequest.web.serviceManagment.model.*;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.CreateTemplateWithFieldsRequestDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.RequestDetailsDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.ServiceDTO;
+import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.ServiceResponseDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.model.dto.TemplateFieldDTO;
 import com.ABIC.CustomerRequest.web.serviceManagment.service.ServiceManagementService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +36,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
