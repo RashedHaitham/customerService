@@ -221,7 +221,7 @@ public class ServiceManagementService {
 
             List<TemplateFieldDTO> fieldDTOs = fields.stream()
                     .map(field -> new TemplateFieldDTO(
-                            null,
+                            field.getId(),
                             field.getLabelEn(),
                             field.getLabelAr(),
                             field.getControlType().getCode(),
@@ -389,7 +389,7 @@ public class ServiceManagementService {
 
             if (!fieldsToDelete.isEmpty()) {
                 for (TemplateField field : fieldsToDelete) {
-                    triggerTemplateField(field.getId(), true);
+                    deleteTemplateField(field.getId());
                 }
                 logger.debug("Deleted {} fields for group ID: {}", fieldsToDelete.size(), groupId);
             }
