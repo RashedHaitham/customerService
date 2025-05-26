@@ -19,7 +19,7 @@ public class TemplateFieldValue {
     private TemplateField field;
 
     @Column(name = "group_id", nullable = false)
-    private Long groupId;
+    private String groupId;
 
     @Column(name = "value", columnDefinition = "TEXT")
     private String value;

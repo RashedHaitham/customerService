@@ -347,7 +347,7 @@ public class ServiceManagementControllerTest {
     void testGetCustomerAllSubs() throws Exception {
         TemplateFieldValue mockValue = new TemplateFieldValue();
         mockValue.setId(1L);
-        mockValue.setGroupId(100L);
+        mockValue.setGroupId("100");
         mockValue.setValue("Test Value");
         mockValue.setSessionId("session-xyz");
         mockValue.setCustomerNumber("CUST-001");
@@ -365,7 +365,7 @@ public class ServiceManagementControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data.content[0].id").value(1))
-                .andExpect(jsonPath("$.data.content[0].groupId").value(100))
+                .andExpect(jsonPath("$.data.content[0].groupId").value("100"))
                 .andExpect(jsonPath("$.data.content[0].value").value("Test Value"))
                 .andExpect(jsonPath("$.data.content[0].sessionId").value("session-xyz"))
                 .andExpect(jsonPath("$.data.content[0].customerNumber").value("CUST-001"));

@@ -8,6 +8,6 @@ import java.util.List;
 @Data
 public class TemplateSubmissionDTO {
     private ValidateRequest validateRequest;
-    private Long groupId;
+    private String groupId;
     private List<FieldValueDTO> values;
 }
